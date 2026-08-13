@@ -26,7 +26,47 @@ const demoFits=[
   {name:"Clean Signal",emoji:"🤍",price:2199,items:"Cream shirt · Straight trousers · Minimal sneakers",tag:"Minimal"},
   {name:"City Y2K",emoji:"🕶️",price:2899,items:"Graphic tee · Wide jeans · Retro sneakers",tag:"Y2K"}
 ];
+// ========================================
+// FITAI — STYLE SELECTION
+// ========================================
 
+document.addEventListener("DOMContentLoaded", () => {
+
+  const choiceGroups = document.querySelectorAll(".choice-group");
+
+  choiceGroups.forEach((group) => {
+
+    const buttons = group.querySelectorAll(".choice");
+
+    buttons.forEach((button) => {
+
+      button.addEventListener("click", () => {
+
+        // Check if this group allows multiple selections
+        const multiple =
+          group.classList.contains("multi") ||
+          group.dataset.multiple === "true";
+
+        if (!multiple) {
+          buttons.forEach((item) => {
+            item.classList.remove("active");
+          });
+        }
+
+        button.classList.toggle("active");
+
+        console.log(
+          "FITAI selection:",
+          button.textContent.trim()
+        );
+
+      });
+
+    });
+
+  });
+
+});
 function renderResults(){
   const style=$("#style").value, budget=Number($("#budget").value), results=$("#results");
   const fits=demoFits.map((x,i)=>({...x,tag:style,price:Math.min(x.price,budget)}));
