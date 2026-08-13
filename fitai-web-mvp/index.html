@@ -87,8 +87,98 @@
       <div id="savedList" class="saved-list"><p class="muted">No saved outfits yet. Generate a look and tap Save.</p></div>
     </section>
  <section id="preferences" class="section preferences">
-...
-</section> </main>
+...<section id="preferences" class="section preferences">
+  <div class="section-head">
+    <p class="eyebrow">PERSONALIZE</p>
+    <h2>Your style, your rules.</h2>
+    <p class="muted">
+      Tell FITAI what you like so your future outfit recommendations feel personal.
+    </p>
+  </div>
+
+  <div class="preferences-grid">
+
+    <div class="panel">
+      <h3>Who are we styling?</h3>
+      <div class="choice-group" data-group="gender">
+        <button type="button" class="choice">Male</button>
+        <button type="button" class="choice">Female</button>
+        <button type="button" class="choice">Unisex</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Your style</h3>
+      <div class="choice-group multi" data-group="styles">
+        <button type="button" class="choice">Streetwear</button>
+        <button type="button" class="choice">Minimal</button>
+        <button type="button" class="choice">Old Money</button>
+        <button type="button" class="choice">Y2K</button>
+        <button type="button" class="choice">Vintage</button>
+        <button type="button" class="choice">Korean</button>
+        <button type="button" class="choice">Grunge</button>
+        <button type="button" class="choice">Smart Casual</button>
+        <button type="button" class="choice">Athleisure</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Favorite colors</h3>
+      <div class="choice-group multi" data-group="colors">
+        <button type="button" class="choice">Black</button>
+        <button type="button" class="choice">White</button>
+        <button type="button" class="choice">Grey</button>
+        <button type="button" class="choice">Blue</button>
+        <button type="button" class="choice">Brown</button>
+        <button type="button" class="choice">Green</button>
+        <button type="button" class="choice">Red</button>
+        <button type="button" class="choice">Beige</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Budget per outfit</h3>
+      <div class="choice-group" data-group="budget">
+        <button type="button" class="choice" data-value="1000">₹1,000</button>
+        <button type="button" class="choice" data-value="2000">₹2,000</button>
+        <button type="button" class="choice active" data-value="3000">₹3,000</button>
+        <button type="button" class="choice" data-value="5000">₹5,000</button>
+        <button type="button" class="choice" data-value="10000">₹10,000+</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Where will you wear it?</h3>
+      <div class="choice-group multi" data-group="occasions">
+        <button type="button" class="choice">College</button>
+        <button type="button" class="choice">Casual</button>
+        <button type="button" class="choice">Date</button>
+        <button type="button" class="choice">Party</button>
+        <button type="button" class="choice">Wedding</button>
+        <button type="button" class="choice">Vacation</button>
+        <button type="button" class="choice">Dinner</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Fit preference</h3>
+      <div class="choice-group" data-group="fit">
+        <button type="button" class="choice">Oversized</button>
+        <button type="button" class="choice">Regular</button>
+        <button type="button" class="choice">Slim</button>
+        <button type="button" class="choice">Relaxed</button>
+      </div>
+    </div>
+
+  </div>
+
+  <button id="savePreferences" class="primary">
+    Save my style →
+  </button>
+
+  <p id="preferenceStatus" class="muted"></p>
+</section> 
+</main>
 
   <footer><span>FITAI</span><p>AI-assisted styling for the next generation.</p></footer>
 
