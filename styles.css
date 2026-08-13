@@ -104,4 +104,15 @@ dialog{background:transparent;border:0;color:var(--text)}dialog::backdrop{backgr
   .choice {
     padding: 10px 14px;
   }
+}/* Active state for ALL FITAI preference buttons */
+
+.choice.active,
+.chip.active,
+.preference-option.active,
+button[data-choice].active {
+    background: #eaff00 !important;
+    color: #111 !important;
+    border-color: #eaff00 !important;
+    box-shadow: 0 0 20px rgba(234, 255, 0, 0.30);
+    transform: translateY(-1px);
 }
