@@ -1,4 +1,10 @@
-const $=s=>document.querySelector(s);
+const SUPABASE_URL = "https://wknzzzzppmloywayxstd.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Aeq_jsbSzbmx4tqgmILOPg_hDg8vFws";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);const $=s=>document.querySelector(s);
 const $$=s=>document.querySelectorAll(s);
 
 document.querySelectorAll("[data-scroll]").forEach(b=>b.addEventListener("click",()=>$(b.dataset.scroll).scrollIntoView({behavior:"smooth"})));
