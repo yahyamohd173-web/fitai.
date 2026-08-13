@@ -29,46 +29,38 @@ const demoFits=[
 // ========================================
 // FITAI — ALL PREFERENCE BUTTONS
 // ========================================
-
 document.addEventListener("click", function (event) {
-
   const button = event.target.closest(
     ".choice, .chip, .preference-option, [data-choice]"
   );
 
   if (!button) return;
 
-  // Sirf preference area ke buttons ko handle karo
+  // Find the closest preference group
   const group = button.closest(
     ".choice-group, .choice-grid, .preferences-grid, .panel"
   );
 
   if (!group) return;
 
-  // Buttons belonging to the same group
-  const buttons = group.querySelectorAll(
-    ".choice, .chip, .preference-option, [data-choice]"
-  );
-
-  // Multiple selection allowed?
+  // Check if this group allows multiple selections
   const multiple =
     group.classList.contains("multi") ||
     group.dataset.multiple === "true" ||
     group.dataset.select === "multiple";
 
-  // Single selection
+  // For single-select groups, remove active from only
+  // buttons belonging to THIS group
   if (!multiple) {
-    buttons.forEach((item) => {
-      item.classList.remove("active");
-    });
+    group
+      .querySelectorAll(
+        ":scope > .choice, :scope > .chip, :scope > .preference-option, :scope > [data-choice]"
+      )
+      .forEach((item) => {
+        item.classList.remove("active");
+      });
   }
 
-  // Toggle selected button
+  // Select clicked button
   button.classList.toggle("active");
-
-  console.log(
-    "FITAI selected:",
-    button.textContent.trim()
-  );
-
 });
