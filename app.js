@@ -79,6 +79,408 @@ $("#loginBtn").addEventListener("click",()=>$("#loginDialog").showModal());
 $("#demoLogin").addEventListener("click",e=>{
   e.preventDefault();
   const email=$("#email").value.trim();
+  // ========================================
+// FITAI — STYLE PREFERENCES
+// ========================================
+
+const preferenceState = {
+  gender: "",
+  styles: [],
+  colors: [],
+  budget: 3000,
+  occasions: [],
+  fit: ""
+};
+
+
+// ----------------------------------------
+// SELECT / DESELECT BUTTONS
+// ----------------------------------------
+
+document.querySelectorAll(".choice-group").forEach((group) => {
+
+  group.querySelectorAll(".choice").forEach((button) => {
+
+    button.addEventListener("click", () => {
+
+      const isMulti = group.classList.contains("multi");
+
+      if (isMulti) {
+        button.classList.toggle("active");
+      } else {
+
+        group.querySelectorAll(".choice").forEach((item) => {
+          item.classList.remove("active");
+        });
+
+        button.classList.add("active");
+      }
+
+      updatePreferenceState();
+
+    });
+
+  });
+
+});
+
+
+// ----------------------------------------
+// READ CURRENT SELECTIONS
+// ----------------------------------------
+
+function updatePreferenceState() {
+
+  const genderGroup =
+    document.querySelector('[data-group="gender"]');
+
+  const genderButton =
+    genderGroup?.querySelector(".choice.active");
+
+  preferenceState.gender =
+    genderButton?.textContent.trim() || "";
+
+
+  const stylesGroup =
+    document.querySelector('[data-group="styles"]');
+
+  preferenceState.styles =
+    Array.from(
+      stylesGroup?.querySelectorAll(".choice.active") || []
+    ).map((button) => button.textContent.trim());
+
+
+  const colorsGroup =
+    document.querySelector('[data-group="colors"]');
+
+  preferenceState.colors =
+    Array.from(
+      colorsGroup?.querySelectorAll(".choice.active") || []
+    ).map((button) => button.textContent.trim());
+
+
+  const budgetGroup =
+    document.querySelector('[data-group="budget"]');
+
+  const budgetButton =
+    budgetGroup?.querySelector(".choice.active");
+
+  preferenceState.budget =
+    Number(budgetButton?.dataset.value || 3000);
+
+
+  const occasionsGroup =
+    document.querySelector('[data-group="occasions"]');
+
+  preferenceState.occasions =
+    Array.from(
+      occasionsGroup?.querySelectorAll(".choice.active") || []
+    ).map((button) => button.textContent.trim());
+
+
+  const fitGroup =
+    document.querySelector('[data-group="fit"]');
+
+  const fitButton =
+    fitGroup?.querySelector(".choice.active");
+
+  preferenceState.fit =
+    fitButton?.textContent.trim() || "";
+
+}
+
+
+// ----------------------------------------
+// SAVE TO SUPABASE
+// ----------------------------------------
+
+document
+  .querySelector("#savePreferences")
+  ?.addEventListener("click", async () => {
+
+    const status =
+      document.querySelector("#preferenceStatus");
+
+    if (!status) return;
+
+
+    if (
+      typeof supabaseClient === "undefined" ||
+      !supabaseClient
+    ) {
+
+      status.textContent =
+        "Supabase is not configured.";
+
+      return;
+    }
+
+
+    status.textContent =
+      "Checking your account…";
+
+
+    const {
+      data: { user },
+      error: userError
+    } = await supabaseClient.auth.getUser();
+
+
+    if (userError || !user) {
+
+      status.textContent =
+        "Please log in first.";
+
+      return;
+    }
+
+
+    updatePreferenceState();
+
+
+    status.textContent =
+      "Saving your style…";
+
+
+    const { error } =
+      await supabaseClient
+        .from("style_preferences")
+        .upsert(
+          {
+            user_id: user.id,
+
+            gender:
+              preferenceState.gender,
+
+            styles:
+              preferenceState.styles,
+
+            colors:
+              preferenceState.colors,
+
+            budget:
+              preferenceState.budget,
+
+            occasions:
+              preferenceState.occasions,
+
+            fit:
+              preferenceState.fit,
+
+            updated_at:
+              new Date().toISOString()
+          },
+          {
+            onConflict: "user_id"
+          }
+        );
+
+
+    if (error) {
+
+      console.error(
+        "FITAI preference save error:",
+        error
+      );
+
+      status.textContent =
+        "Could not save: " + error.message;
+
+      return;
+    }
+
+
+    status.textContent =
+      "✓ Your style has been saved.";
+
+  });
+
+
+// ----------------------------------------
+// LOAD SAVED PREFERENCES
+// ----------------------------------------
+
+async function loadPreferences() {
+
+  if (
+    typeof supabaseClient === "undefined" ||
+    !supabaseClient
+  ) {
+    return;
+  }
+
+
+  const {
+    data: { user }
+  } = await supabaseClient.auth.getUser();
+
+
+  if (!user) return;
+
+
+  const { data, error } =
+    await supabaseClient
+      .from("style_preferences")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+
+  if (error) {
+
+    console.error(
+      "FITAI preference load error:",
+      error
+    );
+
+    return;
+  }
+
+
+  if (!data) return;
+
+
+  preferenceState.gender =
+    data.gender || "";
+
+  preferenceState.styles =
+    data.styles || [];
+
+  preferenceState.colors =
+    data.colors || [];
+
+  preferenceState.budget =
+    data.budget || 3000;
+
+  preferenceState.occasions =
+    data.occasions || [];
+
+  preferenceState.fit =
+    data.fit || "";
+
+
+  applyPreferencesToUI();
+
+}
+
+
+// ----------------------------------------
+// APPLY SAVED VALUES TO BUTTONS
+// ----------------------------------------
+
+function applyPreferencesToUI() {
+
+  document.querySelectorAll(".choice")
+    .forEach((button) => {
+
+      button.classList.remove("active");
+
+
+      const text =
+        button.textContent.trim();
+
+
+      const group =
+        button.closest(".choice-group");
+
+
+      const groupName =
+        group?.dataset.group;
+
+
+      if (
+        groupName === "gender" &&
+        text === preferenceState.gender
+      ) {
+
+        button.classList.add("active");
+
+      }
+
+
+      if (
+        groupName === "styles" &&
+        preferenceState.styles.includes(text)
+      ) {
+
+        button.classList.add("active");
+
+      }
+
+
+      if (
+        groupName === "colors" &&
+        preferenceState.colors.includes(text)
+      ) {
+
+        button.classList.add("active");
+
+      }
+
+
+      if (
+        groupName === "budget" &&
+        Number(button.dataset.value) ===
+        Number(preferenceState.budget)
+      ) {
+
+        button.classList.add("active");
+
+      }
+
+
+      if (
+        groupName === "occasions" &&
+        preferenceState.occasions.includes(text)
+      ) {
+
+        button.classList.add("active");
+
+      }
+
+
+      if (
+        groupName === "fit" &&
+        text === preferenceState.fit
+      ) {
+
+        button.classList.add("active");
+
+      }
+
+    });
+
+}
+
+
+// ----------------------------------------
+// LOAD AFTER LOGIN
+// ----------------------------------------
+
+if (
+  typeof supabaseClient !== "undefined" &&
+  supabaseClient
+) {
+
+  supabaseClient.auth.onAuthStateChange(
+    (event, session) => {
+
+      if (session) {
+
+        setTimeout(() => {
+          loadPreferences();
+        }, 100);
+
+      }
+
+    }
+  );
+
+}
+
+
+// Initial load
+loadPreferences();
   if(!email){alert("Enter an email for the demo.");return}
   $("#loginBtn").textContent=email.split("@")[0];
   $("#loginDialog").close();
