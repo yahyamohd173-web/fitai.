@@ -1,258 +1,178 @@
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => document.querySelectorAll(selector);
+document.addEventListener("DOMContentLoaded", () => {
 
-// Smooth scroll buttons
-document.querySelectorAll("[data-scroll]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const target = document.querySelector(button.dataset.scroll);
-    if (target) {
-      target.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
-    }
-  });
-});
+  // =========================================
+  // FITAI - PREFERENCES
+  // =========================================
 
-// ================================
-// FITAI - PREFERENCE BUTTONS
-// ================================
+  const groups = document.querySelectorAll(".choice-group");
 
-function setupPreferenceButtons() {
-  const buttons = document.querySelectorAll(
-    ".choice, .chip, .preference-option, [data-choice]"
-  );
+  groups.forEach((group) => {
 
-  buttons.forEach((button) => {
-    button.addEventListener("click", function (event) {
-      event.preventDefault();
+    const buttons = group.querySelectorAll(".choice");
 
-      // Find the nearest individual preference group
-      const group =
-        this.closest(".choice-group") ||
-        this.closest(".choice-grid") ||
-        this.closest(".panel");
+    buttons.forEach((button) => {
 
-      if (!group) {
-        this.classList.toggle("active");
-        return;
-      }
+      button.addEventListener("click", () => {
 
-      // Check whether this group allows multiple selections
-      const multiple =
-        group.classList.contains("multi") ||
-        group.dataset.multiple === "true" ||
-        group.dataset.select === "multiple";
+        // Check if multiple selections are allowed
+        const multiple = group.classList.contains("multi");
 
-      // Single-select group
-      if (!multiple) {
-        const groupButtons = group.querySelectorAll(
-          ".choice, .chip, .preference-option, [data-choice]"
+        // Single selection
+        if (!multiple) {
+          buttons.forEach((item) => {
+            item.classList.remove("active");
+          });
+        }
+
+        // Select / deselect clicked button
+        button.classList.toggle("active");
+
+        console.log(
+          "Selected:",
+          button.textContent.trim()
         );
 
-        groupButtons.forEach((item) => {
-          item.classList.remove("active");
-        });
-      }
-
-      // Activate clicked button
-      this.classList.add("active");
-    });
-  });
-}
-
-setupPreferenceButtons();
-
-
-// ================================
-// PHOTO UPLOAD
-// ================================
-
-const photoInput = $("#photoInput");
-
-if (photoInput) {
-  photoInput.addEventListener("change", (event) => {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
-    if (file.size > 8 * 1024 * 1024) {
-      alert("Please choose an image under 8MB.");
-      event.target.value = "";
-      return;
-    }
-
-    const preview = $("#preview");
-
-    if (preview) {
-      preview.src = URL.createObjectURL(file);
-      preview.style.display = "block";
-    }
-  });
-}
-
-
-// ================================
-// DEMO OUTFITS
-// ================================
-
-const demoFits = [
-  {
-    name: "Midnight Street",
-    emoji: "🖤",
-    price: 2499,
-    items: "Oversized black tee · Baggy cargos · White sneakers",
-    tag: "Streetwear"
-  },
-  {
-    name: "Clean Signal",
-    emoji: "🤍",
-    price: 2199,
-    items: "Cream shirt · Straight trousers · Minimal sneakers",
-    tag: "Minimal"
-  },
-  {
-    name: "City Y2K",
-    emoji: "🕶️",
-    price: 2899,
-    items: "Graphic tee · Wide jeans · Retro sneakers",
-    tag: "Y2K"
-  }
-];
-
-
-// ================================
-// STYLE CHIPS
-// ================================
-
-document.querySelectorAll(".chips").forEach((container) => {
-  container.addEventListener("click", (event) => {
-    const chip = event.target.closest(".chip");
-
-    if (!chip) return;
-
-    container.querySelectorAll(".chip").forEach((item) => {
-      item.classList.remove("active");
-    });
-
-    chip.classList.add("active");
-  });
-});
-
-
-// ================================
-// SAVE MY STYLE
-// ================================
-
-const saveButton = $("#savePreferences");
-
-if (saveButton) {
-  saveButton.addEventListener("click", () => {
-
-    const selected = {};
-
-    // Find every preference panel
-    document.querySelectorAll(".panel").forEach((panel) => {
-
-      const active = panel.querySelector(".active");
-
-      if (active) {
-        const title = panel.querySelector("h3");
-
-        if (title) {
-          selected[title.textContent.trim()] =
-            active.textContent.trim();
-        }
-      }
-    });
-
-    // Save in browser
-    localStorage.setItem(
-      "fitaiPreferences",
-      JSON.stringify(selected)
-    );
-
-    const status = $("#preferenceStatus");
-
-    if (status) {
-      status.textContent = "✓ Your style has been saved.";
-    }
-  });
-}
-
-
-// ================================
-// LOAD SAVED PREFERENCES
-// ================================
-
-function loadPreferences() {
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem("fitaiPreferences")
-    );
-
-    if (!saved) return;
-
-    document.querySelectorAll(".panel").forEach((panel) => {
-
-      const title = panel.querySelector("h3");
-
-      if (!title) return;
-
-      const key = title.textContent.trim();
-      const value = saved[key];
-
-      if (!value) return;
-
-      panel.querySelectorAll(
-        ".choice, .chip, .preference-option, [data-choice]"
-      ).forEach((button) => {
-
-        if (button.textContent.trim() === value) {
-          button.classList.add("active");
-        }
       });
+
     });
 
-  } catch (error) {
-    console.log("Could not load saved preferences.");
+  });
+
+
+  // =========================================
+  // SAVE MY STYLE
+  // =========================================
+
+  const saveButton = document.getElementById("savePreferences");
+
+  if (saveButton) {
+
+    saveButton.addEventListener("click", () => {
+
+      const preferences = {};
+
+      groups.forEach((group) => {
+
+        const groupName = group.dataset.group;
+
+        const selected = [...group.querySelectorAll(".choice.active")]
+          .map((button) => button.textContent.trim());
+
+        preferences[groupName] = selected;
+
+      });
+
+      console.log("FITAI Preferences:", preferences);
+
+      // Save in browser
+      localStorage.setItem(
+        "fitaiPreferences",
+        JSON.stringify(preferences)
+      );
+
+      const status = document.getElementById("preferenceStatus");
+
+      if (status) {
+        status.textContent = "Your style has been saved ✓";
+      }
+
+    });
+
   }
-}
-
-loadPreferences();
 
 
-// ================================
-// LOGIN BUTTON
-// ================================
+  // =========================================
+  // LOGIN BUTTON
+  // =========================================
 
-const loginButton = $("#loginBtn");
+  const loginButton = document.getElementById("loginBtn");
 
-if (loginButton) {
-  loginButton.addEventListener("click", () => {
-    const loginDialog = $("#loginDialog");
+  if (loginButton) {
 
-    if (loginDialog) {
-      loginDialog.showModal();
-    } else {
-      alert("Login will be available soon.");
+    loginButton.addEventListener("click", () => {
+
+      // Try common login elements
+      const loginDialog =
+        document.getElementById("loginDialog") ||
+        document.querySelector("dialog") ||
+        document.querySelector(".modal");
+
+      if (loginDialog) {
+
+        if (typeof loginDialog.showModal === "function") {
+          loginDialog.showModal();
+        } else {
+          loginDialog.style.display = "flex";
+        }
+
+      } else {
+
+        console.log("Login dialog not found.");
+
+      }
+
+    });
+
+  }
+
+
+  // =========================================
+  // LOGIN - CONTINUE BUTTON
+  // =========================================
+
+  document.addEventListener("click", (event) => {
+
+    const button = event.target.closest("button");
+
+    if (!button) return;
+
+    const text = button.textContent.trim().toLowerCase();
+
+    if (
+      text === "continue" ||
+      text === "continue →" ||
+      text === "continue >"
+    ) {
+
+      event.preventDefault();
+
+      const email =
+        document.querySelector(
+          'input[type="email"]'
+        );
+
+      const password =
+        document.querySelector(
+          'input[type="password"]'
+        );
+
+      if (email && email.value.trim() === "") {
+
+        alert("Please enter your email.");
+
+        email.focus();
+
+        return;
+
+      }
+
+      if (password && password.value.trim() === "") {
+
+        alert("Please enter your password.");
+
+        password.focus();
+
+        return;
+
+      }
+
+      console.log("Login Continue clicked.");
+
+      alert("Login button is working!");
+
     }
+
   });
-}
 
 
-// ================================
-// CLOSE LOGIN DIALOG
-// ================================
-
-const closeLogin = $("#closeLogin");
-
-if (closeLogin) {
-  closeLogin.addEventListener("click", () => {
-    const loginDialog = $("#loginDialog");
-
-    if (loginDialog) {
-      loginDialog.close();
-    }
-  });
-}
+});
