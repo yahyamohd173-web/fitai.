@@ -1,107 +1,11 @@
 export const config = { runtime: "nodejs" };
-
 const MODEL = process.env.FITAI_OPENAI_MODEL || "gpt-4.1-mini";
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 const text = (v, d = "") => String(v ?? d).trim().slice(0, 240);
-
-function prefs(x = {}) {
-  const budget = Number(x.budget);
-  return {
-    style: text(x.quickStyle, Array.isArray(x.styles) && x.styles[0] || "Streetwear"),
-    occasion: text(x.quickOccasion, Array.isArray(x.occasions) && x.occasions[0] || "Casual"),
-    fit: text(x.fit, "Relaxed"),
-    colors: Array.isArray(x.colors) ? x.colors.slice(0, 3).map(v => text(v)) : [],
-    budget: Number.isFinite(budget) && budget > 0 ? budget : 3000
-  };
-}
-
-function fallback(p) {
-  const c = p.colors[0] || "Black";
-  const sets = [
-    { name: `${p.style} Essential`, emoji: "🖤", shirt: [`${c} relaxed-fit cotton shirt`, 850], pant: ["Straight-fit black trousers", 1050], shoes: ["Minimal white sneakers", 900] },
-    { name: `${p.style} Clean Fit`, emoji: "🤍", shirt: ["Cream oversized textured shirt", 950], pant: ["Dark straight-fit jeans", 1100], shoes: ["Black low-top sneakers", 850] },
-    { name: `${p.style} Statement Fit`, emoji: "🕶️", shirt: ["Oversized graphic tee", 700], pant: ["Wide-leg cargo pants", 1150], shoes: ["Retro chunky sneakers", 1050] }
-  ];
-  return sets.map((x, i) => ({
-    name: x.name, emoji: x.emoji, match: 94 - i * 3, style: p.style, occasion: p.occasion, fit: p.fit,
-    total_price: Math.min(x.shirt[1] + x.pant[1] + x.shoes[1], p.budget),
-    reason: `Complete ${p.style} outfit for ${p.occasion.toLowerCase()} with a ${p.fit.toLowerCase()} fit.`,
-    shirt: { name: x.shirt[0], price: x.shirt[1], search_query: `${x.shirt[0]} men India` },
-    pant: { name: x.pant[0], price: x.pant[1], search_query: `${x.pant[0]} men India` },
-    shoes: { name: x.shoes[0], price: x.shoes[1], search_query: `${x.shoes[0]} men India` },
-    accessory: null
-  }));
-}
-
-function parseJSON(raw) {
-  try { return JSON.parse(raw); } catch {}
-  const m = String(raw || "").match(/\{[\s\S]*\}/);
-  try { return m ? JSON.parse(m[0]) : null; } catch { return null; }
-}
-
-function outputText(data) {
-  if (typeof data?.output_text === "string") return data.output_text.trim();
-  return (data?.output || []).flatMap(x => x?.content || []).map(x => x?.text || x?.value || "").join("\n").trim();
-}
-
-function normalize(data, p) {
-  if (!Array.isArray(data?.looks) || data.looks.length !== 3) return null;
-  return data.looks.map((look, i) => ({
-    name: text(look.name, `FITAI Look ${i + 1}`),
-    emoji: text(look.emoji, ["🖤", "🤍", "🕶️"][i]),
-    match: Math.max(70, Math.min(99, Number(look.match) || 90)),
-    style: text(look.style, p.style), occasion: text(look.occasion, p.occasion), fit: text(look.fit, p.fit),
-    total_price: Math.min(Math.max(0, Number(look.total_price) || p.budget), p.budget),
-    reason: text(look.reason, "Matched to your preferences and budget."),
-    shirt: item(look.shirt), pant: item(look.pant), shoes: item(look.shoes), accessory: look.accessory ? item(look.accessory) : null
-  }));
-}
-
-function item(v) {
-  if (!v) return { name: "", price: 0, search_query: "" };
-  const name = text(v.name || v);
-  return { name, price: Math.max(0, Number(v.price) || 0), search_query: text(v.search_query, name) };
-}
-
-export default async function handler(request) {
-  if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-
-  let body = {};
-  try { body = await request.json(); } catch { return json({ error: "Invalid request body" }, 400); }
-  const p = prefs(body.preferences);
-  const instant = fallback(p);
-
-  // Never leave the UI stuck: if AI is unavailable, return usable outfits immediately.
-  if (!process.env.OPENAI_API_KEY) return json({ configured: false, source: "fallback", looks: instant });
-
-  const photo = typeof body.photoDataUrl === "string" && body.photoDataUrl.startsWith("data:image/") ? body.photoDataUrl : "";
-  const prompt = `You are FITAI, a Gen-Z personal stylist in India. Create exactly 3 complete outfits. Style: ${p.style}. Occasion: ${p.occasion}. Fit: ${p.fit}. Colors: ${p.colors.join(", ") || "flexible"}. Maximum budget INR ${p.budget}. Each look MUST contain exactly one shirt/top, one pant/bottom and one pair of shoes. Optional one accessory. No alternatives. Keep each outfit within budget. If a photo is supplied, use only broad visible clothing proportions; do not identify the person or infer sensitive traits. Return ONLY valid JSON in this shape: {"looks":[{"name":"...","emoji":"...","match":90,"style":"...","occasion":"...","fit":"...","total_price":2000,"reason":"...","shirt":{"name":"...","price":800,"search_query":"..."},"pant":{"name":"...","price":900,"search_query":"..."},"shoes":{"name":"...","price":300,"search_query":"..."},"accessory":null}]}`;
-  const input = photo
-    ? [{ role: "user", content: [{ type: "input_text", text: prompt }, { type: "input_image", image_url: photo }] }]
-    : prompt;
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5500);
-
-  try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      signal: controller.signal,
-      body: JSON.stringify({ model: MODEL, input, max_output_tokens: 900 })
-    });
-    clearTimeout(timer);
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      console.error("FITAI OpenAI error", response.status, data);
-      return json({ configured: true, source: "fallback", looks: instant, note: "AI unavailable; instant styling used." });
-    }
-    const looks = normalize(parseJSON(outputText(data)), p);
-    if (!looks) return json({ configured: true, source: "fallback", looks: instant, note: "AI response incomplete; instant styling used." });
-    return json({ configured: true, source: "ai", looks });
-  } catch (error) {
-    clearTimeout(timer);
-    console.error("FITAI AI request", error);
-    return json({ configured: true, source: "fallback", looks: instant, note: "AI took too long; instant styling used." });
-  }
-}
+function prefs(x = {}) { const budget = Number(x.budget); return { style: text(x.quickStyle, Array.isArray(x.styles) && x.styles[0] || "Streetwear"), occasion: text(x.quickOccasion, Array.isArray(x.occasions) && x.occasions[0] || "Casual"), fit: text(x.fit, "Relaxed"), colors: Array.isArray(x.colors) ? x.colors.slice(0, 3).map(v => text(v)) : [], budget: Number.isFinite(budget) && budget > 0 ? budget : 3000 }; }
+function fallback(p) { const c = p.colors[0] || "Black"; const sets = [{name:`${p.style} Essential`,emoji:"🖤",shirt:[`${c} relaxed-fit cotton shirt`,850],pant:["Straight-fit black trousers",1050],shoes:["Minimal white sneakers",900]},{name:`${p.style} Clean Fit`,emoji:"🤍",shirt:["Cream oversized textured shirt",950],pant:["Dark straight-fit jeans",1100],shoes:["Black low-top sneakers",850]},{name:`${p.style} Statement Fit`,emoji:"🕶️",shirt:["Oversized graphic tee",700],pant:["Wide-leg cargo pants",1150],shoes:["Retro chunky sneakers",1050]}];return sets.map((x,i)=>({name:x.name,emoji:x.emoji,match:94-i*3,style:p.style,occasion:p.occasion,fit:p.fit,total_price:Math.min(x.shirt[1]+x.pant[1]+x.shoes[1],p.budget),reason:`Complete ${p.style} outfit for ${p.occasion.toLowerCase()} with a ${p.fit.toLowerCase()} fit.`,shirt:{name:x.shirt[0],price:x.shirt[1],search_query:`${x.shirt[0]} men India`},pant:{name:x.pant[0],price:x.pant[1],search_query:`${x.pant[0]} men India`},shoes:{name:x.shoes[0],price:x.shoes[1],search_query:`${x.shoes[0]} men India`},accessory:null})); }
+function parseJSON(raw){try{return JSON.parse(raw)}catch{}const m=String(raw||"").match(/\{[\s\S]*\}/);try{return m?JSON.parse(m[0]):null}catch{return null}}
+function outputText(data){if(typeof data?.output_text==="string")return data.output_text.trim();return(data?.output||[]).flatMap(x=>x?.content||[]).map(x=>x?.text||x?.value||"").join("\n").trim()}
+function item(v){if(!v)return{name:"",price:0,search_query:""};const name=text(v.name||v);return{name,price:Math.max(0,Number(v.price)||0),search_query:text(v.search_query,name)}}
+function normalize(data,p){if(!Array.isArray(data?.looks)||data.looks.length!==3)return null;return data.looks.map((look,i)=>({name:text(look.name,`FITAI Look ${i+1}`),emoji:text(look.emoji,["🖤","🤍","🕶️"][i]),match:Math.max(70,Math.min(99,Number(look.match)||90)),style:text(look.style,p.style),occasion:text(look.occasion,p.occasion),fit:text(look.fit,p.fit),total_price:Math.min(Math.max(0,Number(look.total_price)||p.budget),p.budget),reason:text(look.reason,"Matched to your preferences and budget."),shirt:item(look.shirt),pant:item(look.pant),shoes:item(look.shoes),accessory:look.accessory?item(look.accessory):null}))}
+export default async function handler(request){if(request.method!=="POST")return json({error:"Method not allowed"},405);let body={};try{body=await request.json()}catch{return json({error:"Invalid request body"},400)}const p=prefs(body.preferences);const instant=fallback(p);if(!process.env.OPENAI_API_KEY)return json({configured:false,source:"fallback",looks:instant});const photo=typeof body.photoDataUrl==="string"&&body.photoDataUrl.startsWith("data:image/")?body.photoDataUrl:"";const prompt=`You are FITAI, a Gen-Z personal stylist in India. Create exactly 3 complete outfits. Style: ${p.style}. Occasion: ${p.occasion}. Fit: ${p.fit}. Colors: ${p.colors.join(",")||"flexible"}. Maximum budget INR ${p.budget}. Each look must have exactly one shirt/top, one pant/bottom and one pair of shoes, with an optional accessory. Keep every outfit within budget. If a photo is supplied, use only broad visible clothing proportions; do not identify the person or infer sensitive traits. Return only valid JSON with a looks array.`;const input=photo?[{role:"user",content:[{type:"input_text",text:prompt},{type:"input_image",image_url:photo}]}]:prompt;try{const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify({model:MODEL,input,max_output_tokens:1000})});const data=await response.json().catch(()=>({}));if(!response.ok){console.error("FITAI OpenAI error",response.status,data);return json({configured:true,source:"fallback",looks:instant,note:"AI unavailable; instant styling used."})}const looks=normalize(parseJSON(outputText(data)),p);if(!looks)return json({configured:true,source:"fallback",looks:instant,note:"AI response incomplete; instant styling used."});return json({configured:true,source:"ai",looks})}catch(error){console.error("FITAI AI request",error);return json({configured:true,source:"fallback",looks:instant,note:"AI request failed; instant styling used."})}}
