@@ -1,6 +1,6 @@
 export const config = { runtime: "nodejs" };
 
-const MODEL = process.env.FITAI_OPENAI_MODEL || "gpt-5-mini";
+const MODEL = process.env.FITAI_OPENAI_MODEL || "gpt-4.1-mini";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
@@ -68,24 +68,42 @@ export default async function handler(request) {
   const p = prefs(body?.preferences);
   const photo = typeof body?.photoDataUrl === "string" && body.photoDataUrl.startsWith("data:image/") ? body.photoDataUrl : "";
 
-  const prompt = `You are FITAI, a Gen-Z personal stylist in India. Create exactly 3 complete, wearable outfits.
-USER: Gender ${p.gender}; styles ${p.styles.join(", ") || p.quickStyle}; colors ${p.colors.join(", ") || "flexible"}; occasion ${p.occasions.join(", ") || p.quickOccasion}; fit ${p.fit}; maximum budget INR ${p.budget}.
-RULES: Each result is ONE particular outfit, not options. Exactly one shirt/top, one pant/bottom and one pair of shoes. Optional one accessory. Never provide alternatives. Keep every outfit at or below the budget. Make all 3 different. Use concrete item names and useful Indian marketplace search queries. If a photo is provided, use only broad clothing-fit/proportion context; do not identify the person or infer sensitive traits. Do not claim live availability or exact marketplace prices. Return only the requested JSON.`;
+  const prompt = `You are FITAI, a Gen-Z personal stylist in India. Create exactly 3 complete, wearable outfits.\nUSER: Gender ${p.gender}; styles ${p.styles.join(", ") || p.quickStyle}; colors ${p.colors.join(", ") || "flexible"}; occasion ${p.occasions.join(", ") || p.quickOccasion}; fit ${p.fit}; maximum budget INR ${p.budget}.\nRULES: Each result is ONE particular outfit, not options. Exactly one shirt/top, one pant/bottom and one pair of shoes. Optional one accessory. Never provide alternatives. Keep every outfit at or below the budget. Make all 3 different. Use concrete item names and useful Indian marketplace search queries. If a photo is provided, use only broad clothing-fit/proportion context; do not identify the person or infer sensitive traits. Do not claim live availability or exact marketplace prices. Return only the requested JSON.`;
   const input = photo ? [{ role: "user", content: [{ type: "input_text", text: prompt }, { type: "input_image", image_url: photo }] }] : prompt;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 25000);
 
   try {
     const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: JSON.stringify({ model: MODEL, input, reasoning: { effort: "low" }, max_output_tokens: 1800, text: { format: { type: "json_schema", name: "fitai_outfits", strict: true, schema: outfitSchema } } })
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: MODEL,
+        input,
+        max_output_tokens: 1400,
+        text: { format: { type: "json_schema", name: "fitai_outfits", strict: true, schema: outfitSchema } }
+      })
     });
+    clearTimeout(timer);
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) { console.error("FITAI OpenAI error:", response.status, payload); return json({ error: `AI service error (${response.status}). Check Vercel deployment logs.` }, 502); }
+    if (!response.ok) {
+      console.error("FITAI OpenAI error:", response.status, payload);
+      const detail = payload?.error?.message ? String(payload.error.message).slice(0, 180) : `HTTP ${response.status}`;
+      return json({ error: `AI service error: ${detail}` }, 502);
+    }
     const parsed = parseJSON(outputText(payload));
     const looks = normalize(parsed, p);
-    if (looks.length !== 3 || looks.some(x => !x.shirt?.name || !x.pant?.name || !x.shoes?.name)) return json({ error: "AI returned an incomplete outfit. Please try again." }, 502);
+    if (looks.length !== 3 || looks.some(x => !x.shirt?.name || !x.pant?.name || !x.shoes?.name)) {
+      console.error("FITAI invalid model output:", payload);
+      return json({ error: "AI returned an incomplete outfit. Please try again." }, 502);
+    }
     return json({ configured: true, looks });
   } catch (error) {
+    clearTimeout(timer);
     console.error("FITAI server error:", error);
+    if (error?.name === "AbortError") return json({ error: "AI request timed out after 25 seconds. Please try again." }, 504);
     return json({ error: "FITAI could not reach the AI service. Check your Vercel deployment and OPENAI_API_KEY." }, 502);
   }
 }
