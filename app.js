@@ -212,3 +212,23 @@ document.querySelectorAll(".choice-group .choice").forEach((button) => {
     }
   });
 });
+document.addEventListener("click", (e) => {
+  const button = e.target.closest(".choice-group .choice");
+
+  if (!button) return;
+
+  e.preventDefault();
+  e.stopImmediatePropagation();
+
+  const group = button.closest(".choice-group");
+
+  if (group.classList.contains("multi")) {
+    button.classList.toggle("active");
+  } else {
+    group.querySelectorAll(".choice").forEach((item) => {
+      item.classList.remove("active");
+    });
+
+    button.classList.add("active");
+  }
+}, true);
