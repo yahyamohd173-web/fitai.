@@ -8,98 +8,635 @@
   <title>FITAI — Your AI Personal Stylist</title>
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
+
+  <!-- =========================================
+       NAVIGATION
+       ========================================= -->
+
   <header class="nav">
     <a class="logo" href="#home">FIT<span>AI</span></a>
+
     <nav>
       <a href="#explore">Explore</a>
       <a href="#stylist">AI Stylist</a>
       <a href="#saved">Saved</a>
-      <button id="loginBtn" class="outline">Log in</button>
+      <button id="loginBtn" class="outline" type="button">Log in</button>
     </nav>
   </header>
 
+
+  <!-- =========================================
+       MAIN
+       ========================================= -->
+
   <main>
+
+    <!-- =========================================
+         HOME
+         ========================================= -->
+
     <section id="home" class="hero">
+
       <div>
         <p class="eyebrow">AI PERSONAL STYLIST</p>
-        <h1>Your style.<br><em>Reimagined.</em></h1>
-        <p class="lead">Upload your look, choose your vibe and get personalized outfit ideas built around your budget.</p>
-        <button class="primary" data-scroll="#stylist">Create my outfit →</button>
+
+        <h1>
+          Your style.<br>
+          <em>Reimagined.</em>
+        </h1>
+
+        <p class="lead">
+          Upload your look, choose your vibe and get personalized
+          outfit ideas built around your budget.
+        </p>
+
+        <button
+          class="primary"
+          type="button"
+          data-scroll="#stylist"
+        >
+          Create my outfit →
+        </button>
       </div>
+
       <div class="hero-art">
-        <div class="floating f1">STYLE MATCH <b>96%</b></div>
-        <div class="floating f2">BUDGET <b>₹3,000</b></div>
+        <div class="floating f1">
+          STYLE MATCH <b>96%</b>
+        </div>
+
+        <div class="floating f2">
+          BUDGET <b>₹3,000</b>
+        </div>
+
         <div class="silhouette"></div>
       </div>
+
     </section>
+
+
+    <!-- =========================================
+         EXPLORE
+         ========================================= -->
 
     <section id="explore" class="section">
-      <div class="section-head"><div><p class="eyebrow">DISCOVER</p><h2>Find your vibe.</h2></div></div>
+
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">DISCOVER</p>
+          <h2>Find your vibe.</h2>
+        </div>
+      </div>
+
       <div class="chips" id="styleChips">
-        <button class="chip active">Streetwear</button><button class="chip">Minimal</button>
-        <button class="chip">Old Money</button><button class="chip">Y2K</button>
-        <button class="chip">Vintage</button><button class="chip">Korean</button>
-        <button class="chip">Grunge</button><button class="chip">Smart Casual</button>
-        <button class="chip">Athleisure</button><button class="chip">Preppy</button>
+
+        <button type="button" class="chip active">
+          Streetwear
+        </button>
+
+        <button type="button" class="chip">
+          Minimal
+        </button>
+
+        <button type="button" class="chip">
+          Old Money
+        </button>
+
+        <button type="button" class="chip">
+          Y2K
+        </button>
+
+        <button type="button" class="chip">
+          Vintage
+        </button>
+
+        <button type="button" class="chip">
+          Korean
+        </button>
+
+        <button type="button" class="chip">
+          Grunge
+        </button>
+
+        <button type="button" class="chip">
+          Smart Casual
+        </button>
+
+        <button type="button" class="chip">
+          Athleisure
+        </button>
+
+        <button type="button" class="chip">
+          Preppy
+        </button>
+
       </div>
+
       <div class="trend-grid">
-        <article><div class="trend-img t1">STREET</div><h3>Everyday Street</h3><p>Relaxed silhouettes, clean layers.</p></article>
-        <article><div class="trend-img t2">MINIMAL</div><h3>Quiet Fit</h3><p>Neutral tones and simple proportions.</p></article>
-        <article><div class="trend-img t3">Y2K</div><h3>Retro Future</h3><p>Wide denim, graphic details and sneakers.</p></article>
+
+        <article>
+          <div class="trend-img t1">STREET</div>
+          <h3>Everyday Street</h3>
+          <p>Relaxed silhouettes, clean layers.</p>
+        </article>
+
+        <article>
+          <div class="trend-img t2">MINIMAL</div>
+          <h3>Quiet Fit</h3>
+          <p>Neutral tones and simple proportions.</p>
+        </article>
+
+        <article>
+          <div class="trend-img t3">Y2K</div>
+          <h3>Retro Future</h3>
+          <p>Wide denim, graphic details and sneakers.</p>
+        </article>
+
       </div>
+
     </section>
+
+
+    <!-- =========================================
+         AI STYLIST
+         ========================================= -->
 
     <section id="stylist" class="section stylist">
+
       <div class="section-head">
-        <div><p class="eyebrow">CREATE</p><h2>Build your fit.</h2><p class="muted">This MVP runs in the browser. Real AI and shopping APIs can be connected through the environment variables documented below.</p></div>
+
+        <div>
+          <p class="eyebrow">CREATE</p>
+
+          <h2>Build your fit.</h2>
+
+          <p class="muted">
+            Tell FITAI about your style and get personalized
+            outfit recommendations.
+          </p>
+        </div>
+
       </div>
-      <div class="steps"><span class="active">01 Upload</span><span>02 Preferences</span><span>03 Generate</span><span>04 Shop</span></div>
+
+
+      <!-- STEPS -->
+
+      <div class="steps">
+        <span class="active">01 Upload</span>
+        <span>02 Preferences</span>
+        <span>03 Generate</span>
+        <span>04 Shop</span>
+      </div>
+
 
       <div class="creator-grid">
+
+
+        <!-- =====================================
+             PHOTO UPLOAD
+             ===================================== -->
+
         <div class="panel upload-panel">
+
           <h3>Upload a full-body photo</h3>
-          <p class="muted">Your image stays in this browser in the demo version.</p>
+
+          <p class="muted">
+            Your image stays in this browser in the demo version.
+          </p>
+
           <label class="upload-box" for="photoInput">
-            <input id="photoInput" type="file" accept="image/png,image/jpeg,image/webp">
+
+            <input
+              id="photoInput"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+            >
+
             <span class="upload-icon">＋</span>
+
             <b>Choose photo</b>
-            <small>JPG, PNG or WebP</small>
+
+            <small>
+              JPG, PNG or WebP
+            </small>
+
           </label>
-          <img id="preview" class="preview" alt="Uploaded full-body photo preview">
+
+          <img
+            id="preview"
+            class="preview"
+            alt="Uploaded full-body photo preview"
+          >
+
         </div>
+
+
+        <!-- =====================================
+             PREFERENCES
+             ===================================== -->
 
         <div class="panel">
-          <h3>What are we styling?</h3>
-          <label>Occasion<select id="occasion"><option>College</option><option>Date</option><option>Party</option><option>Casual</option><option>Vacation</option><option>Dinner</option><option>Wedding</option></select></label>
-          <label>Maximum budget<select id="budget"><option value="1000">₹1,000</option><option value="2000">₹2,000</option><option value="3000" selected>₹3,000</option><option value="5000">₹5,000</option><option value="10000">₹10,000+</option></select></label>
-          <label>Style<select id="style"><option>Streetwear</option><option>Minimal</option><option>Old Money</option><option>Y2K</option><option>Vintage</option><option>Korean</option><option>Grunge</option><option>Smart Casual</option></select></label>
-          <button id="generateBtn" class="primary full">✦ Style me with AI</button>
+
+          <h3>Who are we styling?</h3>
+
+
+          <!-- GENDER -->
+
+          <div
+            class="choice-group"
+            data-group="gender"
+          >
+
+            <p class="choice-label">Gender</p>
+
+            <div class="choice-row">
+
+              <button
+                type="button"
+                class="choice"
+              >
+                Male
+              </button>
+
+              <button
+                type="button"
+                class="choice"
+              >
+                Female
+              </button>
+
+              <button
+                type="button"
+                class="choice"
+              >
+                Unisex
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- OCCASION -->
+
+          <div
+            class="choice-group"
+            data-group="occasion"
+          >
+
+            <p class="choice-label">Occasion</p>
+
+            <div class="choice-row">
+
+              <button type="button" class="choice">
+                College
+              </button>
+
+              <button type="button" class="choice">
+                Date
+              </button>
+
+              <button type="button" class="choice">
+                Party
+              </button>
+
+              <button type="button" class="choice">
+                Casual
+              </button>
+
+              <button type="button" class="choice">
+                Vacation
+              </button>
+
+              <button type="button" class="choice">
+                Dinner
+              </button>
+
+              <button type="button" class="choice">
+                Wedding
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- STYLE -->
+
+          <div
+            class="choice-group"
+            data-group="style"
+          >
+
+            <p class="choice-label">Style</p>
+
+            <div class="choice-row">
+
+              <button type="button" class="choice">
+                Streetwear
+              </button>
+
+              <button type="button" class="choice">
+                Minimal
+              </button>
+
+              <button type="button" class="choice">
+                Old Money
+              </button>
+
+              <button type="button" class="choice">
+                Y2K
+              </button>
+
+              <button type="button" class="choice">
+                Vintage
+              </button>
+
+              <button type="button" class="choice">
+                Korean
+              </button>
+
+              <button type="button" class="choice">
+                Grunge
+              </button>
+
+              <button type="button" class="choice">
+                Smart Casual
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- COLOR -->
+
+          <div
+            class="choice-group multi"
+            data-group="color"
+          >
+
+            <p class="choice-label">Colors</p>
+
+            <div class="choice-row">
+
+              <button type="button" class="choice">
+                Black
+              </button>
+
+              <button type="button" class="choice">
+                White
+              </button>
+
+              <button type="button" class="choice">
+                Grey
+              </button>
+
+              <button type="button" class="choice">
+                Navy
+              </button>
+
+              <button type="button" class="choice">
+                Brown
+              </button>
+
+              <button type="button" class="choice">
+                Green
+              </button>
+
+              <button type="button" class="choice">
+                Beige
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- FIT -->
+
+          <div
+            class="choice-group"
+            data-group="fit"
+          >
+
+            <p class="choice-label">Fit</p>
+
+            <div class="choice-row">
+
+              <button type="button" class="choice">
+                Baggy
+              </button>
+
+              <button type="button" class="choice">
+                Oversized
+              </button>
+
+              <button type="button" class="choice">
+                Relaxed
+              </button>
+
+              <button type="button" class="choice">
+                Regular
+              </button>
+
+              <button type="button" class="choice">
+                Slim
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- BUDGET -->
+
+          <div
+            class="choice-group"
+            data-group="budget"
+          >
+
+            <p class="choice-label">Maximum budget</p>
+
+            <div class="choice-row">
+
+              <button type="button" class="choice">
+                ₹1,000
+              </button>
+
+              <button type="button" class="choice">
+                ₹2,000
+              </button>
+
+              <button
+                type="button"
+                class="choice"
+              >
+                ₹3,000
+              </button>
+
+              <button type="button" class="choice">
+                ₹5,000
+              </button>
+
+              <button type="button" class="choice">
+                ₹10,000+
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- SAVE -->
+
+          <button
+            id="savePreferences"
+            type="button"
+            class="outline full"
+          >
+            Save my style
+          </button>
+
+          <p
+            id="preferenceStatus"
+            class="status"
+            aria-live="polite"
+          ></p>
+
+
+          <!-- GENERATE -->
+
+          <button
+            id="generateBtn"
+            type="button"
+            class="primary full"
+          >
+            ✦ Style me with AI
+          </button>
+
         </div>
+
       </div>
 
-      <div id="status" class="status" aria-live="polite"></div>
-      <div id="results" class="outfit-grid"></div>
+
+      <div
+        id="status"
+        class="status"
+        aria-live="polite"
+      ></div>
+
+      <div
+        id="results"
+        class="outfit-grid"
+      ></div>
+
     </section>
+
+
+    <!-- =========================================
+         SAVED LOOKS
+         ========================================= -->
 
     <section id="saved" class="section">
-      <p class="eyebrow">YOUR CLOSET</p><h2>Saved looks.</h2>
-      <div id="savedList" class="saved-list"><p class="muted">No saved outfits yet. Generate a look and tap Save.</p></div>
+
+      <p class="eyebrow">YOUR CLOSET</p>
+
+      <h2>Saved looks.</h2>
+
+      <div
+        id="savedList"
+        class="saved-list"
+      >
+        <p class="muted">
+          No saved outfits yet. Generate a look and tap Save.
+        </p>
+      </div>
+
     </section>
+
   </main>
 
-  <footer><span>FITAI</span><p>AI-assisted styling for the next generation.</p></footer>
+
+  <!-- =========================================
+       FOOTER
+       ========================================= -->
+
+  <footer>
+    <span>FITAI</span>
+    <p>AI-assisted styling for the next generation.</p>
+  </footer>
+
+
+  <!-- =========================================
+       LOGIN DIALOG
+       ========================================= -->
 
   <dialog id="loginDialog">
-    <form method="dialog" class="dialog">
-      <button class="close" value="cancel">×</button>
-      <p class="eyebrow">WELCOME BACK</p><h2>Log in to FITAI.</h2>
-      <label>Email<input id="email" type="email" placeholder="you@example.com"></label>
-      <label>Password<input type="password" placeholder="••••••••"></label>
-      <button id="demoLogin" class="primary full" value="default">Continue</button>
-      <p class="muted tiny">Demo authentication is local. Connect Supabase/Firebase for real accounts.</p>
+
+    <form
+      method="dialog"
+      class="dialog"
+    >
+
+      <button
+        class="close"
+        value="cancel"
+        type="submit"
+      >
+        ×
+      </button>
+
+      <p class="eyebrow">
+        WELCOME BACK
+      </p>
+
+      <h2>
+        Log in to FITAI.
+      </h2>
+
+      <label>
+        Email
+        <input
+          id="email"
+          type="email"
+          placeholder="you@example.com"
+        >
+      </label>
+
+      <label>
+        Password
+        <input
+          type="password"
+          placeholder="••••••••"
+        >
+      </label>
+
+      <button
+        id="demoLogin"
+        class="primary full"
+        value="default"
+        type="submit"
+      >
+        Continue
+      </button>
+
+      <p class="muted tiny">
+        Demo authentication is local.
+        Connect Supabase/Firebase for real accounts.
+      </p>
+
     </form>
+
   </dialog>
- <script src="app.js" defer></script>
+
+
+  <!-- =========================================
+       JAVASCRIPT
+       ========================================= -->
+
+  <script src="app.js" defer></script>
+
 </body>
 </html>
