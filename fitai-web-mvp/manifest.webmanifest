@@ -1,0 +1,9 @@
+{
+  "name":"FITAI — AI Personal Stylist",
+  "short_name":"FITAI",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#0b0b0c",
+  "theme_color":"#0b0b0c",
+  "description":"AI-assisted personal styling for the next generation."
+}
