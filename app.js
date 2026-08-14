@@ -1,441 +1,339 @@
-console.log("🔥 FITAI APP.JS IS LOADED 🔥");
-alert("FITAI JS LOADED");
-// =========================================
-// FITAI - APP.JS
-// FINAL VERSION
-// =========================================
+(() => {
+  "use strict";
 
-document.addEventListener("DOMContentLoaded", function () {
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
-  // =========================================
-  // PREFERENCE BUTTONS
-  // =========================================
+  const STORAGE = {
+    preferences: "fitai_preferences_v2",
+    saved: "fitai_saved_v2",
+    user: "fitai_demo_user_v2"
+  };
 
-  const groups = document.querySelectorAll(".choice-group");
+  const demoFits = [
+    { name: "Midnight Street", emoji: "🖤", price: 2499, items: "Oversized black tee · Baggy cargos · White sneakers" },
+    { name: "Clean Signal", emoji: "🤍", price: 2199, items: "Cream shirt · Straight trousers · Minimal sneakers" },
+    { name: "City Y2K", emoji: "🕶️", price: 2899, items: "Graphic tee · Wide jeans · Retro sneakers" }
+  ];
 
-  console.log("FITAI: groups found =", groups.length);
+  const state = {
+    photoUrl: "",
+    preferences: {
+      gender: "",
+      styles: [],
+      colors: [],
+      budget: 3000,
+      occasions: [],
+      fit: ""
+    }
+  };
 
-  groups.forEach(function (group) {
+  function safeJSONParse(value, fallback) {
+    try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }
+  }
 
-    const buttons = group.querySelectorAll(".choice");
+  function setStatus(message = "", target = "#status") {
+    const el = $(target);
+    if (el) el.textContent = message;
+  }
 
-    buttons.forEach(function (button) {
+  function updateStep(step) {
+    $$(".steps span").forEach((el, index) => {
+      el.classList.toggle("active", index < step);
+    });
+  }
 
-      button.addEventListener("click", function (event) {
+  // Smooth navigation.
+  $$('[data-scroll]').forEach(button => {
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      const target = $(button.dataset.scroll);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
 
-        event.preventDefault();
+  // Explore chips.
+  $$("#styleChips .chip").forEach(button => {
+    button.addEventListener("click", () => {
+      $$("#styleChips .chip").forEach(item => item.classList.remove("active"));
+      button.classList.add("active");
+    });
+  });
 
-        const isMultiple = group.classList.contains("multi");
+  // Preference buttons.
+  $$(".choice-group").forEach(group => {
+    const buttons = $$(".choice", group);
+    const multiple = group.classList.contains("multi");
 
-        // Single selection
-        if (!isMultiple) {
-
-          buttons.forEach(function (item) {
-            item.classList.remove("active");
-          });
-
-          button.classList.add("active");
-
-        }
-
-        // Multiple selection
-        else {
-
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        if (multiple) {
           button.classList.toggle("active");
-
+        } else {
+          buttons.forEach(item => item.classList.remove("active"));
+          button.classList.add("active");
         }
-
-        console.log(
-          "FITAI selected:",
-          group.dataset.group,
-          button.textContent.trim()
-        );
-
+        syncPreferencesFromUI();
+        updateStep(2);
       });
-
     });
-
   });
 
+  function syncPreferencesFromUI() {
+    const activeText = group => $$(".choice.active", group).map(button => button.textContent.trim());
+    const one = name => {
+      const group = $(`.choice-group[data-group="${name}"]`);
+      return group ? $(".choice.active", group)?.textContent.trim() || "" : "";
+    };
+    const many = name => {
+      const group = $(`.choice-group[data-group="${name}"]`);
+      return group ? activeText(group) : [];
+    };
+    const budgetGroup = $('.choice-group[data-group="budget"]');
+    const budgetButton = budgetGroup ? $(".choice.active", budgetGroup) : null;
 
-  // =========================================
-  // SAVE MY STYLE
-  // =========================================
-
-  const saveButton =
-    document.getElementById("savePreferences");
-
-  if (saveButton) {
-
-    saveButton.addEventListener("click", function (event) {
-
-      event.preventDefault();
-
-      const preferences = {};
-
-      document
-        .querySelectorAll(".choice-group")
-        .forEach(function (group) {
-
-          const groupName = group.dataset.group;
-
-          const selected = [];
-
-          group
-            .querySelectorAll(".choice.active")
-            .forEach(function (button) {
-
-              selected.push(
-                button.textContent.trim()
-              );
-
-            });
-
-          preferences[groupName] = selected;
-
-        });
-
-      localStorage.setItem(
-        "fitaiPreferences",
-        JSON.stringify(preferences)
-      );
-
-      const status =
-        document.getElementById("preferenceStatus");
-
-      if (status) {
-
-        status.textContent =
-          "Your style has been saved ✓";
-
-      }
-
-      console.log(
-        "FITAI Preferences:",
-        preferences
-      );
-
-    });
-
+    state.preferences = {
+      gender: one("gender"),
+      styles: many("styles"),
+      colors: many("colors"),
+      budget: Number(budgetButton?.dataset.value || 3000),
+      occasions: many("occasions"),
+      fit: one("fit")
+    };
   }
 
+  function applyPreferencesToUI() {
+    const p = state.preferences;
+    $$(".choice").forEach(button => button.classList.remove("active"));
 
-  // =========================================
-  // LOGIN BUTTON
-  // =========================================
-
-  const loginButton =
-    document.getElementById("loginBtn");
-
-  const loginDialog =
-    document.getElementById("loginDialog");
-
-  if (loginButton && loginDialog) {
-
-    loginButton.addEventListener("click", function (event) {
-
-      event.preventDefault();
-
-      if (!loginDialog.open) {
-        loginDialog.showModal();
-      }
-
-    });
-
-  }
-
-
-  // =========================================
-  // LOGIN CONTINUE
-  // =========================================
-
-  const loginForm =
-    document.querySelector("#loginDialog form");
-
-  const demoLogin =
-    document.getElementById("demoLogin");
-
-  if (loginForm && demoLogin) {
-
-    loginForm.addEventListener("submit", function (event) {
-
-      event.preventDefault();
-
-      const email =
-        document.getElementById("email");
-
-      const password =
-        loginForm.querySelector(
-          'input[type="password"]'
-        );
-
-      if (!email || !email.value.trim()) {
-
-        alert("Please enter your email.");
-
-        if (email) {
-          email.focus();
-        }
-
-        return;
-
-      }
-
-      if (!password || !password.value.trim()) {
-
-        alert("Please enter your password.");
-
-        if (password) {
-          password.focus();
-        }
-
-        return;
-
-      }
-
-      console.log(
-        "FITAI: Login successful",
-        email.value
-      );
-
-      alert("Login successful ✓");
-
-      loginDialog.close();
-
-    });
-
-  }
-
-
-  // =========================================
-  // PHOTO PREVIEW
-  // =========================================
-
-  const photoInput =
-    document.getElementById("photoInput");
-
-  const preview =
-    document.getElementById("preview");
-
-  if (photoInput && preview) {
-
-    photoInput.addEventListener("change", function () {
-
-      const file =
-        photoInput.files &&
-        photoInput.files[0];
-
-      if (!file) return;
-
-      const reader =
-        new FileReader();
-
-      reader.onload = function (event) {
-
-        preview.src =
-          event.target.result;
-
-        preview.style.display =
-          "block";
-
-      };
-
-      reader.readAsDataURL(file);
-
-    });
-
-  }
-
-
-  // =========================================
-  // EXPLORE STYLE CHIPS
-  // =========================================
-
-  const chips =
-    document.querySelectorAll(
-      "#styleChips .chip"
-    );
-
-  chips.forEach(function (chip) {
-
-    chip.addEventListener("click", function () {
-
-      chips.forEach(function (item) {
-        item.classList.remove("active");
+    const activate = (groupName, values) => {
+      const group = $(`.choice-group[data-group="${groupName}"]`);
+      if (!group) return;
+      const list = Array.isArray(values) ? values : [values];
+      $$(".choice", group).forEach(button => {
+        const matches = groupName === "budget"
+          ? Number(button.dataset.value) === Number(p.budget)
+          : list.includes(button.textContent.trim());
+        if (matches) button.classList.add("active");
       });
+    };
 
-      chip.classList.add("active");
+    activate("gender", p.gender);
+    activate("styles", p.styles);
+    activate("colors", p.colors);
+    activate("budget", p.budget);
+    activate("occasions", p.occasions);
+    activate("fit", p.fit);
+  }
 
-    });
+  function savePreferences() {
+    syncPreferencesFromUI();
+    localStorage.setItem(STORAGE.preferences, JSON.stringify(state.preferences));
+    setStatus("✓ Your style has been saved.", "#preferenceStatus");
+  }
 
+  $("#savePreferences")?.addEventListener("click", () => {
+    savePreferences();
   });
 
-
-  // =========================================
-  // HERO SCROLL
-  // =========================================
-
-  const scrollButtons =
-    document.querySelectorAll("[data-scroll]");
-
-  scrollButtons.forEach(function (button) {
-
-    button.addEventListener("click", function (event) {
-
-      event.preventDefault();
-
-      const selector =
-        button.dataset.scroll;
-
-      const target =
-        document.querySelector(selector);
-
-      if (target) {
-
-        target.scrollIntoView({
-          behavior: "smooth"
-        });
-
-      }
-
-    });
-
+  $("#clearPreferences")?.addEventListener("click", () => {
+    state.preferences = { gender: "", styles: [], colors: [], budget: 3000, occasions: [], fit: "" };
+    localStorage.removeItem(STORAGE.preferences);
+    applyPreferencesToUI();
+    setStatus("Preferences reset.", "#preferenceStatus");
   });
 
+  // Photo preview with size/type validation and object URL cleanup.
+  const photoInput = $("#photoInput");
+  const preview = $("#preview");
+  const removePhoto = $("#removePhoto");
 
-  // =========================================
-  // GENERATE OUTFIT
-  // =========================================
+  photoInput?.addEventListener("change", event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const generateButton =
-    document.getElementById("generateBtn");
-
-  if (generateButton) {
-
-    generateButton.addEventListener("click", function () {
-
-      const status =
-        document.getElementById("status");
-
-      const results =
-        document.getElementById("results");
-
-      if (status) {
-
-        status.textContent =
-          "FITAI is preparing your personalized outfit...";
-
-      }
-
-      if (results) {
-
-        results.innerHTML = `
-          <article class="outfit">
-            <div class="outfit-visual">✦</div>
-
-            <div class="outfit-body">
-
-              <p class="eyebrow">FITAI MATCH</p>
-
-              <h3>Your personalized fit</h3>
-
-              <p class="muted">
-                Your selected preferences have been received.
-              </p>
-
-              <p class="price">
-                Ready to style
-              </p>
-
-              <div class="actions">
-                <button type="button">
-                  Save
-                </button>
-
-                <button type="button">
-                  Shop
-                </button>
-              </div>
-
-            </div>
-          </article>
-        `;
-
-      }
-
-      console.log(
-        "FITAI: Generate clicked"
-      );
-
-    });
-
-  }
-
-
-  // =========================================
-  // LOAD SAVED PREFERENCES
-  // =========================================
-
-  try {
-
-    const saved =
-      localStorage.getItem(
-        "fitaiPreferences"
-      );
-
-    if (saved) {
-
-      const preferences =
-        JSON.parse(saved);
-
-      Object.keys(preferences).forEach(function (groupName) {
-
-        const group =
-          document.querySelector(
-            '.choice-group[data-group="' +
-            groupName +
-            '"]'
-          );
-
-        if (!group) return;
-
-        const selected =
-          preferences[groupName];
-
-        group
-          .querySelectorAll(".choice")
-          .forEach(function (button) {
-
-            const text =
-              button.textContent.trim();
-
-            if (selected.includes(text)) {
-
-              button.classList.add("active");
-
-            }
-
-          });
-
-      });
-
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      alert("Please choose a JPG, PNG or WebP image.");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      alert("Please choose an image under 8MB.");
+      event.target.value = "";
+      return;
     }
 
-  } catch (error) {
+    if (state.photoUrl) URL.revokeObjectURL(state.photoUrl);
+    state.photoUrl = URL.createObjectURL(file);
+    if (preview) {
+      preview.src = state.photoUrl;
+      preview.style.display = "block";
+    }
+    $("#photoInfo").textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+    removePhoto?.classList.remove("hidden");
+    updateStep(1);
+  });
 
-    console.log(
-      "FITAI: Could not load saved preferences"
-    );
+  removePhoto?.addEventListener("click", () => {
+    if (state.photoUrl) URL.revokeObjectURL(state.photoUrl);
+    state.photoUrl = "";
+    if (photoInput) photoInput.value = "";
+    if (preview) {
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+    }
+    $("#photoInfo").textContent = "";
+    removePhoto.classList.add("hidden");
+  });
 
+  // Generate demo recommendations.
+  $("#generateBtn")?.addEventListener("click", () => {
+    syncPreferencesFromUI();
+    const p = state.preferences;
+    const quickStyle = $("#style")?.value || "Streetwear";
+    const quickBudget = Number($("#budget")?.value || p.budget || 3000);
+    const occasion = $("#occasion")?.value || "Casual";
+    const style = p.styles[0] || quickStyle;
+    const budget = p.budget || quickBudget;
+
+    updateStep(3);
+    setStatus("✦ Analyzing preferences · matching colors · building outfits…");
+    const results = $("#results");
+    if (!results) return;
+    results.innerHTML = "";
+
+    setTimeout(() => {
+      const fits = demoFits.map((fit, index) => ({
+        ...fit,
+        tag: style,
+        occasion,
+        price: Math.min(fit.price, budget, quickBudget),
+        index
+      }));
+
+      results.innerHTML = fits.map(fit => `
+        <article class="outfit">
+          <div class="outfit-visual" aria-hidden="true">${fit.emoji}</div>
+          <div class="outfit-body">
+            <small class="muted">AI MATCH · ${fit.tag} · ${fit.occasion}</small>
+            <h3>${fit.name}</h3>
+            <p class="muted">${fit.items}</p>
+            <div class="price">₹${fit.price.toLocaleString("en-IN")}</div>
+            <div class="actions">
+              <button type="button" data-save="${fit.index}">♡ Save</button>
+              <button type="button" data-remix="${fit.index}">↻ Remix</button>
+              <button type="button" data-shop="${fit.index}">Shop →</button>
+            </div>
+          </div>
+        </article>
+      `).join("");
+
+      setStatus("✦ 3 personalized looks ready.");
+      updateStep(4);
+      bindResultActions(fits);
+    }, 650);
+  });
+
+  function bindResultActions(fits) {
+    $$("[data-save]", $("#results")).forEach(button => {
+      button.addEventListener("click", () => {
+        const fit = fits[Number(button.dataset.save)];
+        const saved = safeJSONParse(localStorage.getItem(STORAGE.saved), []);
+        const duplicate = saved.some(item => item.name === fit.name && item.tag === fit.tag);
+        if (!duplicate) saved.push(fit);
+        localStorage.setItem(STORAGE.saved, JSON.stringify(saved.slice(-12)));
+        button.textContent = "✓ Saved";
+        renderSaved();
+      });
+    });
+
+    $$("[data-remix]", $("#results")).forEach(button => {
+      button.addEventListener("click", () => {
+        button.disabled = true;
+        const old = button.textContent;
+        button.textContent = "Remixing…";
+        setTimeout(() => {
+          button.disabled = false;
+          button.textContent = old;
+        }, 650);
+      });
+    });
+
+    $$("[data-shop]", $("#results")).forEach(button => {
+      button.addEventListener("click", () => {
+        alert("Shopping links are not connected yet. Add approved affiliate/product APIs before using live links.");
+      });
+    });
   }
 
+  function renderSaved() {
+    const list = $("#savedList");
+    const clear = $("#clearSaved");
+    if (!list) return;
+    const saved = safeJSONParse(localStorage.getItem(STORAGE.saved), []);
+    if (!saved.length) {
+      list.innerHTML = '<p class="muted">No saved outfits yet. Generate a look and tap Save.</p>';
+      clear?.classList.add("hidden");
+      return;
+    }
+    list.innerHTML = saved.slice().reverse().map(item => `
+      <article class="panel saved-card">
+        <div>
+          <b>${item.name}</b>
+          <p class="muted">${item.items}</p>
+          <span class="price">₹${Number(item.price).toLocaleString("en-IN")}</span>
+        </div>
+        <button class="outline" type="button" data-remove-saved="${encodeURIComponent(item.name)}">Remove</button>
+      </article>
+    `).join("");
+    clear?.classList.remove("hidden");
 
-  // =========================================
-  // READY
-  // =========================================
+    $$('[data-remove-saved]', list).forEach(button => {
+      button.addEventListener("click", () => {
+        const name = decodeURIComponent(button.dataset.removeSaved);
+        const next = saved.filter(item => item.name !== name);
+        localStorage.setItem(STORAGE.saved, JSON.stringify(next));
+        renderSaved();
+      });
+    });
+  }
 
-  console.log(
-    "FITAI: APP.JS loaded successfully ✓"
-  );
+  $("#clearSaved")?.addEventListener("click", () => {
+    localStorage.removeItem(STORAGE.saved);
+    renderSaved();
+  });
 
-});
+  // Demo login: browser-only and deliberately not a real authentication system.
+  const loginDialog = $("#loginDialog");
+  $("#loginBtn")?.addEventListener("click", () => {
+    if (loginDialog && !loginDialog.open) loginDialog.showModal();
+  });
+
+  $("#loginForm")?.addEventListener("submit", event => {
+    event.preventDefault();
+    const email = $("#email")?.value.trim();
+    const password = $("#password")?.value || "";
+    if (!email) { alert("Please enter your email."); $("#email")?.focus(); return; }
+    if (password.length < 4) { alert("Password must be at least 4 characters."); $("#password")?.focus(); return; }
+
+    const user = { email, name: email.split("@")[0] };
+    localStorage.setItem(STORAGE.user, JSON.stringify(user));
+    $("#loginBtn").textContent = user.name;
+    loginDialog?.close();
+    setStatus(`Welcome back, ${user.name}.`, "#preferenceStatus");
+  });
+
+  // Restore UI state.
+  const savedPreferences = safeJSONParse(localStorage.getItem(STORAGE.preferences), null);
+  if (savedPreferences) {
+    state.preferences = { ...state.preferences, ...savedPreferences };
+    applyPreferencesToUI();
+  }
+
+  const user = safeJSONParse(localStorage.getItem(STORAGE.user), null);
+  if (user?.name) $("#loginBtn").textContent = user.name;
+
+  renderSaved();
+  updateStep(1);
+})();
