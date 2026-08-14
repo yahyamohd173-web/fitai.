@@ -1,487 +1,439 @@
 // =========================================
 // FITAI - APP.JS
+// FINAL VERSION
 // =========================================
 
+document.addEventListener("DOMContentLoaded", function () {
 
-// =========================================
-// PREFERENCE BUTTONS
-// =========================================
+  // =========================================
+  // PREFERENCE BUTTONS
+  // =========================================
 
-document.addEventListener("click", function (event) {
+  const groups = document.querySelectorAll(".choice-group");
 
-  const button = event.target.closest(
-    ".choice-group .choice"
-  );
-
-  if (!button) return;
-
-  const group = button.closest(
-    ".choice-group"
-  );
-
-  if (!group) return;
-
-  const isMultiple =
-    group.classList.contains("multi");
-
-
-  // SINGLE SELECTION
-  if (!isMultiple) {
-
-    group
-      .querySelectorAll(".choice")
-      .forEach(function (item) {
-
-        item.classList.remove("active");
-
-      });
-
-    button.classList.add("active");
-
-  }
-
-
-  // MULTIPLE SELECTION
-  else {
-
-    button.classList.toggle("active");
-
-  }
-
-
-  console.log(
-    "FITAI:",
-    group.dataset.group,
-    button.textContent.trim()
-  );
-
-});
-
-
-// =========================================
-// SAVE MY STYLE
-// =========================================
-
-function savePreferences() {
-
-  const groups =
-    document.querySelectorAll(
-      ".choice-group"
-    );
-
-  const preferences = {};
-
+  console.log("FITAI: groups found =", groups.length);
 
   groups.forEach(function (group) {
 
-    const groupName =
-      group.dataset.group;
+    const buttons = group.querySelectorAll(".choice");
 
-    const selected = [];
+    buttons.forEach(function (button) {
 
+      button.addEventListener("click", function (event) {
 
-    group
-      .querySelectorAll(
-        ".choice.active"
-      )
-      .forEach(function (button) {
+        event.preventDefault();
 
-        selected.push(
+        const isMultiple = group.classList.contains("multi");
+
+        // Single selection
+        if (!isMultiple) {
+
+          buttons.forEach(function (item) {
+            item.classList.remove("active");
+          });
+
+          button.classList.add("active");
+
+        }
+
+        // Multiple selection
+        else {
+
+          button.classList.toggle("active");
+
+        }
+
+        console.log(
+          "FITAI selected:",
+          group.dataset.group,
           button.textContent.trim()
         );
 
       });
 
-
-    preferences[groupName] =
-      selected;
+    });
 
   });
 
 
-  localStorage.setItem(
-    "fitaiPreferences",
-    JSON.stringify(preferences)
-  );
+  // =========================================
+  // SAVE MY STYLE
+  // =========================================
 
+  const saveButton =
+    document.getElementById("savePreferences");
 
-  const status =
-    document.getElementById(
-      "preferenceStatus"
-    );
+  if (saveButton) {
 
+    saveButton.addEventListener("click", function (event) {
 
-  if (status) {
+      event.preventDefault();
 
-    status.textContent =
-      "Your style has been saved ✓";
+      const preferences = {};
 
-  }
+      document
+        .querySelectorAll(".choice-group")
+        .forEach(function (group) {
 
+          const groupName = group.dataset.group;
 
-  console.log(
-    "FITAI Preferences:",
-    preferences
-  );
+          const selected = [];
 
-}
+          group
+            .querySelectorAll(".choice.active")
+            .forEach(function (button) {
 
+              selected.push(
+                button.textContent.trim()
+              );
 
-// Save button
+            });
 
-document.addEventListener(
-  "click",
-  function (event) {
+          preferences[groupName] = selected;
 
-    const button =
-      event.target.closest(
-        "#savePreferences"
+        });
+
+      localStorage.setItem(
+        "fitaiPreferences",
+        JSON.stringify(preferences)
       );
 
-    if (!button) return;
+      const status =
+        document.getElementById("preferenceStatus");
 
-    event.preventDefault();
+      if (status) {
 
-    savePreferences();
-
-  }
-);
-
-
-// =========================================
-// LOGIN BUTTON
-// =========================================
-
-document.addEventListener(
-  "click",
-  function (event) {
-
-    const loginButton =
-      event.target.closest(
-        "#loginBtn"
-      );
-
-    if (!loginButton) return;
-
-    event.preventDefault();
-
-
-    const dialog =
-      document.getElementById(
-        "loginDialog"
-      );
-
-
-    if (!dialog) {
-
-      const modal =
-        document.querySelector(
-          ".modal"
-        );
-
-
-      if (modal) {
-
-        modal.style.display =
-          "flex";
-
-      } else {
-
-        alert(
-          "Login window not found."
-        );
+        status.textContent =
+          "Your style has been saved ✓";
 
       }
 
-      return;
+      console.log(
+        "FITAI Preferences:",
+        preferences
+      );
 
-    }
+    });
+
+  }
 
 
-    if (
-      typeof dialog.showModal ===
-      "function"
-    ) {
+  // =========================================
+  // LOGIN BUTTON
+  // =========================================
 
-      if (!dialog.open) {
+  const loginButton =
+    document.getElementById("loginBtn");
 
-        dialog.showModal();
+  const loginDialog =
+    document.getElementById("loginDialog");
+
+  if (loginButton && loginDialog) {
+
+    loginButton.addEventListener("click", function (event) {
+
+      event.preventDefault();
+
+      if (!loginDialog.open) {
+        loginDialog.showModal();
+      }
+
+    });
+
+  }
+
+
+  // =========================================
+  // LOGIN CONTINUE
+  // =========================================
+
+  const loginForm =
+    document.querySelector("#loginDialog form");
+
+  const demoLogin =
+    document.getElementById("demoLogin");
+
+  if (loginForm && demoLogin) {
+
+    loginForm.addEventListener("submit", function (event) {
+
+      event.preventDefault();
+
+      const email =
+        document.getElementById("email");
+
+      const password =
+        loginForm.querySelector(
+          'input[type="password"]'
+        );
+
+      if (!email || !email.value.trim()) {
+
+        alert("Please enter your email.");
+
+        if (email) {
+          email.focus();
+        }
+
+        return;
 
       }
 
-    } else {
+      if (!password || !password.value.trim()) {
 
-      dialog.style.display =
-        "flex";
+        alert("Please enter your password.");
 
-    }
+        if (password) {
+          password.focus();
+        }
+
+        return;
+
+      }
+
+      console.log(
+        "FITAI: Login successful",
+        email.value
+      );
+
+      alert("Login successful ✓");
+
+      loginDialog.close();
+
+    });
 
   }
-);
 
 
-// =========================================
-// LOGIN CONTINUE
-// =========================================
+  // =========================================
+  // PHOTO PREVIEW
+  // =========================================
 
-document.addEventListener(
-  "click",
-  function (event) {
+  const photoInput =
+    document.getElementById("photoInput");
 
-    const button =
-      event.target.closest(
-        "#demoLogin"
-      );
+  const preview =
+    document.getElementById("preview");
 
-    if (!button) return;
+  if (photoInput && preview) {
 
-    event.preventDefault();
+    photoInput.addEventListener("change", function () {
 
+      const file =
+        photoInput.files &&
+        photoInput.files[0];
 
-    const email =
-      document.querySelector(
-        'input[type="email"]'
-      );
+      if (!file) return;
 
+      const reader =
+        new FileReader();
 
-    const password =
-      document.querySelector(
-        'input[type="password"]'
-      );
-
-
-    // Email validation
-
-    if (
-      email &&
-      !email.value.trim()
-    ) {
-
-      alert(
-        "Please enter your email."
-      );
-
-      email.focus();
-
-      return;
-
-    }
-
-
-    // Password validation
-
-    if (
-      password &&
-      !password.value.trim()
-    ) {
-
-      alert(
-        "Please enter your password."
-      );
-
-      password.focus();
-
-      return;
-
-    }
-
-
-    alert(
-      "Login Continue is working!"
-    );
-
-
-    // Close dialog after successful demo login
-
-    const dialog =
-      document.getElementById(
-        "loginDialog"
-      );
-
-
-    if (
-      dialog &&
-      typeof dialog.close ===
-      "function"
-    ) {
-
-      dialog.close();
-
-    }
-
-  }
-);
-
-
-// =========================================
-// PHOTO PREVIEW
-// =========================================
-
-document.addEventListener(
-  "change",
-  function (event) {
-
-    const input =
-      event.target.closest(
-        "#photoInput"
-      );
-
-    if (!input) return;
-
-
-    const file =
-      input.files &&
-      input.files[0];
-
-
-    if (!file) return;
-
-
-    const preview =
-      document.getElementById(
-        "preview"
-      );
-
-
-    if (!preview) return;
-
-
-    const reader =
-      new FileReader();
-
-
-    reader.onload =
-      function (e) {
+      reader.onload = function (event) {
 
         preview.src =
-          e.target.result;
+          event.target.result;
 
         preview.style.display =
           "block";
 
       };
 
+      reader.readAsDataURL(file);
 
-    reader.readAsDataURL(file);
+    });
 
   }
-);
 
 
-// =========================================
-// STYLE CHIPS
-// =========================================
+  // =========================================
+  // EXPLORE STYLE CHIPS
+  // =========================================
 
-document.addEventListener(
-  "click",
-  function (event) {
-
-    const chip =
-      event.target.closest(
-        "#styleChips .chip"
-      );
-
-    if (!chip) return;
-
-    event.preventDefault();
-
-
-    document
-      .querySelectorAll(
-        "#styleChips .chip"
-      )
-      .forEach(function (item) {
-
-        item.classList.remove(
-          "active"
-        );
-
-      });
-
-
-    chip.classList.add(
-      "active"
+  const chips =
+    document.querySelectorAll(
+      "#styleChips .chip"
     );
 
+  chips.forEach(function (chip) {
+
+    chip.addEventListener("click", function () {
+
+      chips.forEach(function (item) {
+        item.classList.remove("active");
+      });
+
+      chip.classList.add("active");
+
+    });
+
+  });
+
+
+  // =========================================
+  // HERO SCROLL
+  // =========================================
+
+  const scrollButtons =
+    document.querySelectorAll("[data-scroll]");
+
+  scrollButtons.forEach(function (button) {
+
+    button.addEventListener("click", function (event) {
+
+      event.preventDefault();
+
+      const selector =
+        button.dataset.scroll;
+
+      const target =
+        document.querySelector(selector);
+
+      if (target) {
+
+        target.scrollIntoView({
+          behavior: "smooth"
+        });
+
+      }
+
+    });
+
+  });
+
+
+  // =========================================
+  // GENERATE OUTFIT
+  // =========================================
+
+  const generateButton =
+    document.getElementById("generateBtn");
+
+  if (generateButton) {
+
+    generateButton.addEventListener("click", function () {
+
+      const status =
+        document.getElementById("status");
+
+      const results =
+        document.getElementById("results");
+
+      if (status) {
+
+        status.textContent =
+          "FITAI is preparing your personalized outfit...";
+
+      }
+
+      if (results) {
+
+        results.innerHTML = `
+          <article class="outfit">
+            <div class="outfit-visual">✦</div>
+
+            <div class="outfit-body">
+
+              <p class="eyebrow">FITAI MATCH</p>
+
+              <h3>Your personalized fit</h3>
+
+              <p class="muted">
+                Your selected preferences have been received.
+              </p>
+
+              <p class="price">
+                Ready to style
+              </p>
+
+              <div class="actions">
+                <button type="button">
+                  Save
+                </button>
+
+                <button type="button">
+                  Shop
+                </button>
+              </div>
+
+            </div>
+          </article>
+        `;
+
+      }
+
+      console.log(
+        "FITAI: Generate clicked"
+      );
+
+    });
+
   }
-);
 
 
-// =========================================
-// HERO SCROLL BUTTON
-// =========================================
+  // =========================================
+  // LOAD SAVED PREFERENCES
+  // =========================================
 
-document.addEventListener(
-  "click",
-  function (event) {
+  try {
 
-    const button =
-      event.target.closest(
-        "[data-scroll]"
+    const saved =
+      localStorage.getItem(
+        "fitaiPreferences"
       );
 
-    if (!button) return;
+    if (saved) {
 
-    event.preventDefault();
+      const preferences =
+        JSON.parse(saved);
 
+      Object.keys(preferences).forEach(function (groupName) {
 
-    const targetSelector =
-      button.dataset.scroll;
+        const group =
+          document.querySelector(
+            '.choice-group[data-group="' +
+            groupName +
+            '"]'
+          );
 
+        if (!group) return;
 
-    const target =
-      document.querySelector(
-        targetSelector
-      );
+        const selected =
+          preferences[groupName];
 
+        group
+          .querySelectorAll(".choice")
+          .forEach(function (button) {
 
-    if (target) {
+            const text =
+              button.textContent.trim();
 
-      target.scrollIntoView({
-        behavior: "smooth"
+            if (selected.includes(text)) {
+
+              button.classList.add("active");
+
+            }
+
+          });
+
       });
 
     }
 
-  }
-);
-
-
-// =========================================
-// GENERATE BUTTON
-// =========================================
-
-document.addEventListener(
-  "click",
-  function (event) {
-
-    const button =
-      event.target.closest(
-        "#generateBtn"
-      );
-
-    if (!button) return;
-
-    event.preventDefault();
-
-
-    const status =
-      document.getElementById(
-        "status"
-      );
-
-
-    if (status) {
-
-      status.textContent =
-        "FITAI is preparing your personalized outfit...";
-
-    }
-
+  } catch (error) {
 
     console.log(
-      "FITAI Generate clicked"
+      "FITAI: Could not load saved preferences"
     );
 
   }
-);
+
+
+  // =========================================
+  // READY
+  // =========================================
+
+  console.log(
+    "FITAI: APP.JS loaded successfully ✓"
+  );
+
+});
