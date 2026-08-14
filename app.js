@@ -195,3 +195,20 @@ document.querySelectorAll(".choice-group").forEach((group) => {
   });
 
 });
+document.querySelectorAll(".choice-group .choice").forEach((button) => {
+  button.addEventListener("click", () => {
+    const group = button.closest(".choice-group");
+
+    if (!group) return;
+
+    if (group.classList.contains("multi")) {
+      button.classList.toggle("active");
+    } else {
+      group.querySelectorAll(".choice").forEach((item) => {
+        item.classList.remove("active");
+      });
+
+      button.classList.add("active");
+    }
+  });
+});
