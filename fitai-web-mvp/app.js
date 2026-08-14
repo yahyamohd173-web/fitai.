@@ -1,332 +1,339 @@
-const $=s=>document.querySelector(s);
-const $$=s=>document.querySelectorAll(s);
+(() => {
+  "use strict";
 
-document.querySelectorAll("[data-scroll]").forEach(b=>b.addEventListener("click",()=>$(b.dataset.scroll).scrollIntoView({behavior:"smooth"})));
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
-function setupChips(){
-  $$(".chips .chip").forEach(btn=>btn.addEventListener("click",()=>{
-    const group=btn.parentElement;
-    group.querySelectorAll(".chip").forEach(x=>x.classList.remove("active"));
-    btn.classList.add("active");
-  }));
-}
-setupChips();
+  const STORAGE = {
+    preferences: "fitai_preferences_v2",
+    saved: "fitai_saved_v2",
+    user: "fitai_demo_user_v2"
+  };
 
-$("#photoInput").addEventListener("change",e=>{
-  const file=e.target.files?.[0];
-  if(!file)return;
-  if(file.size>8*1024*1024){alert("Please choose an image under 8MB.");e.target.value="";return}
-  const img=$("#preview");
-  img.src=URL.createObjectURL(file);
-  img.style.display="block";
-});
+  const demoFits = [
+    { name: "Midnight Street", emoji: "🖤", price: 2499, items: "Oversized black tee · Baggy cargos · White sneakers" },
+    { name: "Clean Signal", emoji: "🤍", price: 2199, items: "Cream shirt · Straight trousers · Minimal sneakers" },
+    { name: "City Y2K", emoji: "🕶️", price: 2899, items: "Graphic tee · Wide jeans · Retro sneakers" }
+  ];
 
-const demoFits=[
-  {name:"Midnight Street",emoji:"🖤",price:2499,items:"Oversized black tee · Baggy cargos · White sneakers",tag:"Streetwear"},
-  {name:"Clean Signal",emoji:"🤍",price:2199,items:"Cream shirt · Straight trousers · Minimal sneakers",tag:"Minimal"},
-  {name:"City Y2K",emoji:"🕶️",price:2899,items:"Graphic tee · Wide jeans · Retro sneakers",tag:"Y2K"}
-];
+  const state = {
+    photoUrl: "",
+    preferences: {
+      gender: "",
+      styles: [],
+      colors: [],
+      budget: 3000,
+      occasions: [],
+      fit: ""
+    }
+  };
 
-function renderResults(){
-  const style=$("#style").value, budget=Number($("#budget").value), results=$("#results");
-  const fits=demoFits.map((x,i)=>({...x,tag:style,price:Math.min(x.price,budget)}));
-  results.innerHTML=fits.map((x,i)=>`
-    <article class="outfit">
-      <div class="outfit-visual">${x.emoji}</div>
-      <div class="outfit-body">
-        <small class="muted">AI MATCH · ${x.tag}</small>
-        <h3>${x.name}</h3>
-        <p class="muted">${x.items}</p>
-        <div class="price">₹${x.price.toLocaleString("en-IN")}</div>
-        <div class="actions">
-          <button data-save="${i}">♡ Save</button>
-          <button data-remix="${i}">↻ Remix</button>
-          <button data-shop="${i}">Shop →</button>
-        </div>
-      </div>
-    </article>`).join("");
+  function safeJSONParse(value, fallback) {
+    try { return value ? JSON.parse(value) : fallback; } catch { return fallback; }
+  }
 
-  results.querySelectorAll("[data-save]").forEach(b=>b.addEventListener("click",()=>{
-    const fit=fits[Number(b.dataset.save)];
-    const saved=JSON.parse(localStorage.getItem("fitai_saved")||"[]");
-    saved.push(fit); localStorage.setItem("fitai_saved",JSON.stringify(saved));
-    b.textContent="✓ Saved"; renderSaved();
-  }));
-  results.querySelectorAll("[data-remix]").forEach(b=>b.addEventListener("click",()=>{
-    b.textContent="Remixing…";
-    setTimeout(()=>{b.textContent="↻ Remix";alert("Demo remix complete. Connect your AI recommendation API for real regeneration.");},700);
-  }));
-  results.querySelectorAll("[data-shop]").forEach(b=>b.addEventListener("click",()=>{
-    alert("Shopping integration placeholder. Connect approved Amazon/Flipkart/Myntra affiliate APIs or product feeds before publishing live links.");
-  }));
-}
+  function setStatus(message = "", target = "#status") {
+    const el = $(target);
+    if (el) el.textContent = message;
+  }
 
-$("#generateBtn").addEventListener("click",()=>{
-  const status=$("#status");
-  status.textContent="✦ Analyzing your preferences · matching colors · building outfits…";
-  $("#results").innerHTML="";
-  setTimeout(()=>{status.textContent="✦ 3 personalized looks ready.";renderResults()},1100);
-});
+  function updateStep(step) {
+    $$(".steps span").forEach((el, index) => {
+      el.classList.toggle("active", index < step);
+    });
+  }
 
-function renderSaved(){
-  const list=$("#savedList"), saved=JSON.parse(localStorage.getItem("fitai_saved")||"[]");
-  if(!saved.length){list.innerHTML='<p class="muted">No saved outfits yet. Generate a look and tap Save.</p>';return}
-  list.innerHTML=saved.slice(-6).reverse().map(x=>`<div class="panel" style="margin:10px 0"><b>${x.name}</b><span class="muted"> · ${x.items}</span><strong class="price"> · ₹${x.price.toLocaleString("en-IN")}</strong></div>`).join("");
-}
-renderSaved();
-
-$("#loginBtn").addEventListener("click",()=>$("#loginDialog").showModal());
-$("#demoLogin").addEventListener("click",e=>{
-  e.preventDefault();
-  const email=$("#email").value.trim();
-  if(!email){alert("Enter an email for the demo.");return}
-  // ========================================
-// FITAI — STYLE PREFERENCES
-// ========================================
-
-const preferenceState = {
-  gender: "",
-  styles: [],
-  colors: [],
-  budget: 3000,
-  occasions: [],
-  fit: ""
-};
-
-// Select / deselect preference buttons
-document.querySelectorAll(".choice-group").forEach((group) => {
-  const groupName = group.dataset.group;
-
-  group.querySelectorAll(".choice").forEach((button) => {
-    button.addEventListener("click", () => {
-
-      const isMulti = group.classList.contains("multi");
-
-      if (isMulti) {
-        button.classList.toggle("active");
-      } else {
-        group.querySelectorAll(".choice").forEach((b) => {
-          b.classList.remove("active");
-        });
-
-        button.classList.add("active");
-      }
-
-      updatePreferenceState();
+  // Smooth navigation.
+  $$('[data-scroll]').forEach(button => {
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      const target = $(button.dataset.scroll);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
-});
 
+  // Explore chips.
+  $$("#styleChips .chip").forEach(button => {
+    button.addEventListener("click", () => {
+      $$("#styleChips .chip").forEach(item => item.classList.remove("active"));
+      button.classList.add("active");
+    });
+  });
 
-function updatePreferenceState() {
+  // Preference buttons.
+  $$(".choice-group").forEach(group => {
+    const buttons = $$(".choice", group);
+    const multiple = group.classList.contains("multi");
 
-  const genderGroup = document.querySelector('[data-group="gender"]');
-  const genderButton = genderGroup?.querySelector(".choice.active");
+    buttons.forEach(button => {
+      button.addEventListener("click", () => {
+        if (multiple) {
+          button.classList.toggle("active");
+        } else {
+          buttons.forEach(item => item.classList.remove("active"));
+          button.classList.add("active");
+        }
+        syncPreferencesFromUI();
+        updateStep(2);
+      });
+    });
+  });
 
-  preferenceState.gender =
-    genderButton?.textContent.trim() || "";
+  function syncPreferencesFromUI() {
+    const activeText = group => $$(".choice.active", group).map(button => button.textContent.trim());
+    const one = name => {
+      const group = $(`.choice-group[data-group="${name}"]`);
+      return group ? $(".choice.active", group)?.textContent.trim() || "" : "";
+    };
+    const many = name => {
+      const group = $(`.choice-group[data-group="${name}"]`);
+      return group ? activeText(group) : [];
+    };
+    const budgetGroup = $('.choice-group[data-group="budget"]');
+    const budgetButton = budgetGroup ? $(".choice.active", budgetGroup) : null;
 
+    state.preferences = {
+      gender: one("gender"),
+      styles: many("styles"),
+      colors: many("colors"),
+      budget: Number(budgetButton?.dataset.value || 3000),
+      occasions: many("occasions"),
+      fit: one("fit")
+    };
+  }
 
-  const stylesGroup = document.querySelector('[data-group="styles"]');
+  function applyPreferencesToUI() {
+    const p = state.preferences;
+    $$(".choice").forEach(button => button.classList.remove("active"));
 
-  preferenceState.styles =
-    [...(stylesGroup?.querySelectorAll(".choice.active") || [])]
-      .map((button) => button.textContent.trim());
+    const activate = (groupName, values) => {
+      const group = $(`.choice-group[data-group="${groupName}"]`);
+      if (!group) return;
+      const list = Array.isArray(values) ? values : [values];
+      $$(".choice", group).forEach(button => {
+        const matches = groupName === "budget"
+          ? Number(button.dataset.value) === Number(p.budget)
+          : list.includes(button.textContent.trim());
+        if (matches) button.classList.add("active");
+      });
+    };
 
+    activate("gender", p.gender);
+    activate("styles", p.styles);
+    activate("colors", p.colors);
+    activate("budget", p.budget);
+    activate("occasions", p.occasions);
+    activate("fit", p.fit);
+  }
 
-  const colorsGroup = document.querySelector('[data-group="colors"]');
+  function savePreferences() {
+    syncPreferencesFromUI();
+    localStorage.setItem(STORAGE.preferences, JSON.stringify(state.preferences));
+    setStatus("✓ Your style has been saved.", "#preferenceStatus");
+  }
 
-  preferenceState.colors =
-    [...(colorsGroup?.querySelectorAll(".choice.active") || [])]
-      .map((button) => button.textContent.trim());
+  $("#savePreferences")?.addEventListener("click", () => {
+    savePreferences();
+  });
 
+  $("#clearPreferences")?.addEventListener("click", () => {
+    state.preferences = { gender: "", styles: [], colors: [], budget: 3000, occasions: [], fit: "" };
+    localStorage.removeItem(STORAGE.preferences);
+    applyPreferencesToUI();
+    setStatus("Preferences reset.", "#preferenceStatus");
+  });
 
-  const budgetGroup = document.querySelector('[data-group="budget"]');
-  const budgetButton = budgetGroup?.querySelector(".choice.active");
+  // Photo preview with size/type validation and object URL cleanup.
+  const photoInput = $("#photoInput");
+  const preview = $("#preview");
+  const removePhoto = $("#removePhoto");
 
-  preferenceState.budget =
-    Number(budgetButton?.dataset.value || 3000);
+  photoInput?.addEventListener("change", event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-
-  const occasionsGroup =
-    document.querySelector('[data-group="occasions"]');
-
-  preferenceState.occasions =
-    [...(occasionsGroup?.querySelectorAll(".choice.active") || [])]
-      .map((button) => button.textContent.trim());
-
-
-  const fitGroup = document.querySelector('[data-group="fit"]');
-  const fitButton = fitGroup?.querySelector(".choice.active");
-
-  preferenceState.fit =
-    fitButton?.textContent.trim() || "";
-}
-
-
-// Save preferences to Supabase
-document
-  .querySelector("#savePreferences")
-  ?.addEventListener("click", async () => {
-
-    const status =
-      document.querySelector("#preferenceStatus");
-
-    if (!supabaseClient) {
-      status.textContent = "Supabase is not configured.";
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      alert("Please choose a JPG, PNG or WebP image.");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      alert("Please choose an image under 8MB.");
+      event.target.value = "";
       return;
     }
 
-    const {
-      data: { user }
-    } = await supabaseClient.auth.getUser();
+    if (state.photoUrl) URL.revokeObjectURL(state.photoUrl);
+    state.photoUrl = URL.createObjectURL(file);
+    if (preview) {
+      preview.src = state.photoUrl;
+      preview.style.display = "block";
+    }
+    $("#photoInfo").textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+    removePhoto?.classList.remove("hidden");
+    updateStep(1);
+  });
 
-    if (!user) {
-      status.textContent =
-        "Please log in before saving your preferences.";
+  removePhoto?.addEventListener("click", () => {
+    if (state.photoUrl) URL.revokeObjectURL(state.photoUrl);
+    state.photoUrl = "";
+    if (photoInput) photoInput.value = "";
+    if (preview) {
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+    }
+    $("#photoInfo").textContent = "";
+    removePhoto.classList.add("hidden");
+  });
+
+  // Generate demo recommendations.
+  $("#generateBtn")?.addEventListener("click", () => {
+    syncPreferencesFromUI();
+    const p = state.preferences;
+    const quickStyle = $("#style")?.value || "Streetwear";
+    const quickBudget = Number($("#budget")?.value || p.budget || 3000);
+    const occasion = $("#occasion")?.value || "Casual";
+    const style = p.styles[0] || quickStyle;
+    const budget = p.budget || quickBudget;
+
+    updateStep(3);
+    setStatus("✦ Analyzing preferences · matching colors · building outfits…");
+    const results = $("#results");
+    if (!results) return;
+    results.innerHTML = "";
+
+    setTimeout(() => {
+      const fits = demoFits.map((fit, index) => ({
+        ...fit,
+        tag: style,
+        occasion,
+        price: Math.min(fit.price, budget, quickBudget),
+        index
+      }));
+
+      results.innerHTML = fits.map(fit => `
+        <article class="outfit">
+          <div class="outfit-visual" aria-hidden="true">${fit.emoji}</div>
+          <div class="outfit-body">
+            <small class="muted">AI MATCH · ${fit.tag} · ${fit.occasion}</small>
+            <h3>${fit.name}</h3>
+            <p class="muted">${fit.items}</p>
+            <div class="price">₹${fit.price.toLocaleString("en-IN")}</div>
+            <div class="actions">
+              <button type="button" data-save="${fit.index}">♡ Save</button>
+              <button type="button" data-remix="${fit.index}">↻ Remix</button>
+              <button type="button" data-shop="${fit.index}">Shop →</button>
+            </div>
+          </div>
+        </article>
+      `).join("");
+
+      setStatus("✦ 3 personalized looks ready.");
+      updateStep(4);
+      bindResultActions(fits);
+    }, 650);
+  });
+
+  function bindResultActions(fits) {
+    $$("[data-save]", $("#results")).forEach(button => {
+      button.addEventListener("click", () => {
+        const fit = fits[Number(button.dataset.save)];
+        const saved = safeJSONParse(localStorage.getItem(STORAGE.saved), []);
+        const duplicate = saved.some(item => item.name === fit.name && item.tag === fit.tag);
+        if (!duplicate) saved.push(fit);
+        localStorage.setItem(STORAGE.saved, JSON.stringify(saved.slice(-12)));
+        button.textContent = "✓ Saved";
+        renderSaved();
+      });
+    });
+
+    $$("[data-remix]", $("#results")).forEach(button => {
+      button.addEventListener("click", () => {
+        button.disabled = true;
+        const old = button.textContent;
+        button.textContent = "Remixing…";
+        setTimeout(() => {
+          button.disabled = false;
+          button.textContent = old;
+        }, 650);
+      });
+    });
+
+    $$("[data-shop]", $("#results")).forEach(button => {
+      button.addEventListener("click", () => {
+        alert("Shopping links are not connected yet. Add approved affiliate/product APIs before using live links.");
+      });
+    });
+  }
+
+  function renderSaved() {
+    const list = $("#savedList");
+    const clear = $("#clearSaved");
+    if (!list) return;
+    const saved = safeJSONParse(localStorage.getItem(STORAGE.saved), []);
+    if (!saved.length) {
+      list.innerHTML = '<p class="muted">No saved outfits yet. Generate a look and tap Save.</p>';
+      clear?.classList.add("hidden");
       return;
     }
+    list.innerHTML = saved.slice().reverse().map(item => `
+      <article class="panel saved-card">
+        <div>
+          <b>${item.name}</b>
+          <p class="muted">${item.items}</p>
+          <span class="price">₹${Number(item.price).toLocaleString("en-IN")}</span>
+        </div>
+        <button class="outline" type="button" data-remove-saved="${encodeURIComponent(item.name)}">Remove</button>
+      </article>
+    `).join("");
+    clear?.classList.remove("hidden");
 
-    updatePreferenceState();
+    $$('[data-remove-saved]', list).forEach(button => {
+      button.addEventListener("click", () => {
+        const name = decodeURIComponent(button.dataset.removeSaved);
+        const next = saved.filter(item => item.name !== name);
+        localStorage.setItem(STORAGE.saved, JSON.stringify(next));
+        renderSaved();
+      });
+    });
+  }
 
-    status.textContent = "Saving your style…";
-
-
-    const { error } =
-      await supabaseClient
-        .from("style_preferences")
-        .upsert({
-          user_id: user.id,
-          gender: preferenceState.gender,
-          styles: preferenceState.styles,
-          colors: preferenceState.colors,
-          budget: preferenceState.budget,
-          occasions: preferenceState.occasions,
-          fit: preferenceState.fit,
-          updated_at: new Date().toISOString()
-        });
-
-
-    if (error) {
-      console.error(error);
-
-      status.textContent =
-        "Could not save: " + error.message;
-
-      return;
-    }
-
-    status.textContent =
-      "✓ Your style has been saved.";
+  $("#clearSaved")?.addEventListener("click", () => {
+    localStorage.removeItem(STORAGE.saved);
+    renderSaved();
   });
 
-
-// Load previously saved preferences
-async function loadPreferences() {
-
-  if (!supabaseClient) return;
-
-  const {
-    data: { user }
-  } = await supabaseClient.auth.getUser();
-
-  if (!user) return;
-
-
-  const { data, error } =
-    await supabaseClient
-      .from("style_preferences")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-
-  if (error || !data) return;
-
-
-  preferenceState.gender = data.gender || "";
-  preferenceState.styles = data.styles || [];
-  preferenceState.colors = data.colors || [];
-  preferenceState.budget = data.budget || 3000;
-  preferenceState.occasions = data.occasions || [];
-  preferenceState.fit = data.fit || "";
-
-
-  applyPreferencesToUI();
-}
-
-
-function applyPreferencesToUI() {
-
-  document.querySelectorAll(".choice").forEach((button) => {
-
-    button.classList.remove("active");
-
-    const text = button.textContent.trim();
-    const group = button.closest(".choice-group");
-    const groupName = group?.dataset.group;
-
-
-    if (
-      groupName === "gender" &&
-      text === preferenceState.gender
-    ) {
-      button.classList.add("active");
-    }
-
-
-    if (
-      groupName === "styles" &&
-      preferenceState.styles.includes(text)
-    ) {
-      button.classList.add("active");
-    }
-
-
-    if (
-      groupName === "colors" &&
-      preferenceState.colors.includes(text)
-    ) {
-      button.classList.add("active");
-    }
-
-
-    if (
-      groupName === "budget" &&
-      Number(button.dataset.value) === preferenceState.budget
-    ) {
-      button.classList.add("active");
-    }
-
-
-    if (
-      groupName === "occasions" &&
-      preferenceState.occasions.includes(text)
-    ) {
-      button.classList.add("active");
-    }
-
-
-    if (
-      groupName === "fit" &&
-      text === preferenceState.fit
-    ) {
-      button.classList.add("active");
-    }
+  // Demo login: browser-only and deliberately not a real authentication system.
+  const loginDialog = $("#loginDialog");
+  $("#loginBtn")?.addEventListener("click", () => {
+    if (loginDialog && !loginDialog.open) loginDialog.showModal();
   });
-}
 
+  $("#loginForm")?.addEventListener("submit", event => {
+    event.preventDefault();
+    const email = $("#email")?.value.trim();
+    const password = $("#password")?.value || "";
+    if (!email) { alert("Please enter your email."); $("#email")?.focus(); return; }
+    if (password.length < 4) { alert("Password must be at least 4 characters."); $("#password")?.focus(); return; }
 
-// Load preferences after login
-if (supabaseClient) {
-  supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (session) {
-      setTimeout(loadPreferences, 0);
-    }
+    const user = { email, name: email.split("@")[0] };
+    localStorage.setItem(STORAGE.user, JSON.stringify(user));
+    $("#loginBtn").textContent = user.name;
+    loginDialog?.close();
+    setStatus(`Welcome back, ${user.name}.`, "#preferenceStatus");
   });
-}
 
-loadPreferences();
-  $("#loginBtn").textContent=email.split("@")[0];
-  $("#loginDialog").close();
-});
+  // Restore UI state.
+  const savedPreferences = safeJSONParse(localStorage.getItem(STORAGE.preferences), null);
+  if (savedPreferences) {
+    state.preferences = { ...state.preferences, ...savedPreferences };
+    applyPreferencesToUI();
+  }
+
+  const user = safeJSONParse(localStorage.getItem(STORAGE.user), null);
+  if (user?.name) $("#loginBtn").textContent = user.name;
+
+  renderSaved();
+  updateStep(1);
+})();
