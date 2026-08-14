@@ -30,4 +30,29 @@ function updateUserUI(){const u=read(K.u,null),b=$('#loginBtn');if(b)b.textConte
 const savedPrefs=read(K.p,null);if(savedPrefs){state.prefs=savedPrefs;const g=n=>$(`.choice-group[data-group="${n}"]`);const act=(n,v)=>{if(!g(n))return;$$('.choice',g(n)).forEach(x=>{if(n==='budget'?Number(x.dataset.value)===Number(v):Array.isArray(v)?v.includes(x.textContent.trim()):x.textContent.trim()===v)x.classList.add('active')})};act('gender',savedPrefs.gender);act('styles',savedPrefs.styles);act('colors',savedPrefs.colors);act('budget',savedPrefs.budget);act('occasions',savedPrefs.occasions);act('fit',savedPrefs.fit)}
 updateUserUI();renderSaved();
 const css=document.createElement('style');css.textContent=`.hidden{display:none!important}.fitai-loading{text-align:center;padding:40px}.fitai-spinner{width:34px;height:34px;border:3px solid #2b2b30;border-top-color:#d9ff5a;border-radius:50%;margin:0 auto 15px;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.fitai-pieces{display:grid;gap:7px;margin:14px 0}.fitai-pieces div{display:grid;grid-template-columns:28px 1fr;padding:9px;background:#101012;border:1px solid #2b2b30;border-radius:11px}.fitai-pieces div b{grid-column:2;font-size:11px;color:#a5a5aa}.fitai-pieces div span{grid-column:2}.fitai-shop{width:min(900px,95vw);max-height:90vh;overflow:auto;background:#141416;color:#f4f4f0;border:1px solid #2b2b30;border-radius:24px;padding:25px;position:relative}.fitai-shop>button{position:absolute;right:15px;top:8px;border:0;background:none;color:#aaa;font-size:30px;cursor:pointer}.fitai-shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}.fitai-shop-grid article{background:#1a1a1d;border:1px solid #2b2b30;border-radius:17px;padding:16px}.fitai-shop-grid article div{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:15px}.fitai-shop-grid a{padding:9px;text-align:center;background:#0f0f11;border-radius:9px;font-size:12px}@media(max-width:700px){.fitai-shop-grid{grid-template-columns:1fr}}`;document.head.appendChild(css);
+
+// Visual fashion references for style choices and trend cards.
+const fashionImages={
+  Streetwear:'https://loremflickr.com/500/600/streetwear,fashion?lock=11',
+  Minimal:'https://loremflickr.com/500/600/minimal,fashion?lock=12',
+  'Old Money':'https://loremflickr.com/500/600/oldmoney,fashion?lock=13',
+  Y2K:'https://loremflickr.com/500/600/y2k,fashion?lock=14',
+  Vintage:'https://loremflickr.com/500/600/vintage,fashion?lock=15',
+  Korean:'https://loremflickr.com/500/600/korean,fashion?lock=16',
+  Grunge:'https://loremflickr.com/500/600/grunge,fashion?lock=17',
+  'Smart Casual':'https://loremflickr.com/500/600/smartcasual,fashion?lock=18',
+  Athleisure:'https://loremflickr.com/500/600/athleisure,fashion?lock=19',
+  Preppy:'https://loremflickr.com/500/600/preppy,fashion?lock=20'
+};
+function addFashionVisuals(){
+  const group=$('.choice-group[data-group="styles"]');
+  if(group) $$('.choice',group).forEach(btn=>{
+    const name=btn.textContent.trim(); if(btn.querySelector('.choice-photo'))return;
+    const img=document.createElement('img'); img.className='choice-photo'; img.alt=`${name} fashion example`; img.loading='lazy'; img.src=fashionImages[name]||fashionImages.Streetwear;
+    btn.prepend(img); btn.classList.add('visual-choice');
+  });
+  const trends=[['.t1','Streetwear'],['.t2','Minimal'],['.t3','Y2K']];
+  trends.forEach(([sel,name])=>{const el=$(sel);if(!el||el.querySelector('.trend-photo'))return;const img=document.createElement('img');img.className='trend-photo';img.alt=`${name} fashion example`;img.loading='lazy';img.src=fashionImages[name];el.textContent='';el.appendChild(img);const label=document.createElement('span');label.textContent=name.toUpperCase();el.appendChild(label)});
+}
+addFashionVisuals();
 })();
