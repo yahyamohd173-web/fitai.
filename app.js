@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+
 
   // =========================================
   // FITAI - ALL PREFERENCE BUTTONS
@@ -168,6 +168,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     alert("Login Continue is working!");
+
+  });
+// FITAI preference buttons
+document.querySelectorAll(".choice-group").forEach((group) => {
+
+  group.querySelectorAll(".choice").forEach((button) => {
+
+    button.addEventListener("click", function () {
+
+      const isMultiple =
+        group.classList.contains("multi");
+
+      if (!isMultiple) {
+        group
+          .querySelectorAll(".choice")
+          .forEach((item) => {
+            item.classList.remove("active");
+          });
+      }
+
+      this.classList.add("active");
+
+    });
 
   });
 
