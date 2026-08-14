@@ -7,57 +7,55 @@
 // PREFERENCE BUTTONS
 // =========================================
 
-document.addEventListener(
-  "click",
-  function (event) {
+document.addEventListener("click", function (event) {
 
-    const button = event.target.closest(
-      ".choice-group .choice"
-    );
+  const button = event.target.closest(
+    ".choice-group .choice"
+  );
 
-    // Not a preference button
-    if (!button) return;
+  if (!button) return;
 
-    const group = button.closest(
-      ".choice-group"
-    );
+  const group = button.closest(
+    ".choice-group"
+  );
 
-    if (!group) return;
+  if (!group) return;
 
-    event.preventDefault();
+  const isMultiple =
+    group.classList.contains("multi");
 
-    const isMultiple =
-      group.classList.contains("multi");
 
-    // Single-selection group
-    if (!isMultiple) {
+  // SINGLE SELECTION
+  if (!isMultiple) {
 
-      group
-        .querySelectorAll(".choice")
-        .forEach(function (item) {
-          item.classList.remove("active");
-        });
+    group
+      .querySelectorAll(".choice")
+      .forEach(function (item) {
 
-      button.classList.add("active");
+        item.classList.remove("active");
 
-    }
+      });
 
-    // Multiple-selection group
-    else {
+    button.classList.add("active");
 
-      button.classList.toggle("active");
+  }
 
-    }
 
-    console.log(
-      "FITAI:",
-      group.dataset.group,
-      button.textContent.trim()
-    );
+  // MULTIPLE SELECTION
+  else {
 
-  },
-  true
-);
+    button.classList.toggle("active");
+
+  }
+
+
+  console.log(
+    "FITAI:",
+    group.dataset.group,
+    button.textContent.trim()
+  );
+
+});
 
 
 // =========================================
@@ -73,6 +71,7 @@ function savePreferences() {
 
   const preferences = {};
 
+
   groups.forEach(function (group) {
 
     const groupName =
@@ -80,8 +79,11 @@ function savePreferences() {
 
     const selected = [];
 
+
     group
-      .querySelectorAll(".choice.active")
+      .querySelectorAll(
+        ".choice.active"
+      )
       .forEach(function (button) {
 
         selected.push(
@@ -90,19 +92,24 @@ function savePreferences() {
 
       });
 
-    preferences[groupName] = selected;
+
+    preferences[groupName] =
+      selected;
 
   });
+
 
   localStorage.setItem(
     "fitaiPreferences",
     JSON.stringify(preferences)
   );
 
+
   const status =
     document.getElementById(
       "preferenceStatus"
     );
+
 
   if (status) {
 
@@ -110,6 +117,7 @@ function savePreferences() {
       "Your style has been saved ✓";
 
   }
+
 
   console.log(
     "FITAI Preferences:",
@@ -157,10 +165,12 @@ document.addEventListener(
 
     event.preventDefault();
 
+
     const dialog =
       document.getElementById(
         "loginDialog"
       );
+
 
     if (!dialog) {
 
@@ -168,6 +178,7 @@ document.addEventListener(
         document.querySelector(
           ".modal"
         );
+
 
       if (modal) {
 
@@ -186,13 +197,16 @@ document.addEventListener(
 
     }
 
+
     if (
       typeof dialog.showModal ===
       "function"
     ) {
 
       if (!dialog.open) {
+
         dialog.showModal();
+
       }
 
     } else {
@@ -223,10 +237,12 @@ document.addEventListener(
 
     event.preventDefault();
 
+
     const email =
       document.querySelector(
         'input[type="email"]'
       );
+
 
     const password =
       document.querySelector(
@@ -274,6 +290,25 @@ document.addEventListener(
       "Login Continue is working!"
     );
 
+
+    // Close dialog after successful demo login
+
+    const dialog =
+      document.getElementById(
+        "loginDialog"
+      );
+
+
+    if (
+      dialog &&
+      typeof dialog.close ===
+      "function"
+    ) {
+
+      dialog.close();
+
+    }
+
   }
 );
 
@@ -293,21 +328,27 @@ document.addEventListener(
 
     if (!input) return;
 
+
     const file =
       input.files &&
       input.files[0];
 
+
     if (!file) return;
+
 
     const preview =
       document.getElementById(
         "preview"
       );
 
+
     if (!preview) return;
+
 
     const reader =
       new FileReader();
+
 
     reader.onload =
       function (e) {
@@ -319,6 +360,7 @@ document.addEventListener(
           "block";
 
       };
+
 
     reader.readAsDataURL(file);
 
@@ -343,6 +385,7 @@ document.addEventListener(
 
     event.preventDefault();
 
+
     document
       .querySelectorAll(
         "#styleChips .chip"
@@ -354,6 +397,7 @@ document.addEventListener(
         );
 
       });
+
 
     chip.classList.add(
       "active"
@@ -380,13 +424,16 @@ document.addEventListener(
 
     event.preventDefault();
 
+
     const targetSelector =
       button.dataset.scroll;
+
 
     const target =
       document.querySelector(
         targetSelector
       );
+
 
     if (target) {
 
@@ -417,10 +464,12 @@ document.addEventListener(
 
     event.preventDefault();
 
+
     const status =
       document.getElementById(
         "status"
       );
+
 
     if (status) {
 
@@ -428,6 +477,7 @@ document.addEventListener(
         "FITAI is preparing your personalized outfit...";
 
     }
+
 
     console.log(
       "FITAI Generate clicked"
