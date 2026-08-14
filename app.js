@@ -1,3 +1,5 @@
+console.log("🔥 FITAI APP.JS IS LOADED 🔥");
+alert("FITAI JS LOADED");
 // =========================================
 // FITAI - APP.JS
 // FINAL VERSION
