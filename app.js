@@ -27,7 +27,7 @@
         }
 
         // Toggle clicked button
-        button.classList.toggle("active");
+      button.classList.add("active");
 
         console.log(
           "FITAI:",
