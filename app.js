@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
   // =========================================
-  // FITAI - PREFERENCES
+  // FITAI - ALL PREFERENCE BUTTONS
   // =========================================
 
   const groups = document.querySelectorAll(".choice-group");
@@ -12,23 +12,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     buttons.forEach((button) => {
 
-      button.addEventListener("click", () => {
+      button.addEventListener("click", (event) => {
 
-        // Check if multiple selections are allowed
+        event.preventDefault();
+
+        // Multiple selection?
         const multiple = group.classList.contains("multi");
 
-        // Single selection
+        // Single selection group
         if (!multiple) {
           buttons.forEach((item) => {
             item.classList.remove("active");
           });
         }
 
-        // Select / deselect clicked button
+        // Toggle clicked button
         button.classList.toggle("active");
 
         console.log(
-          "Selected:",
+          "FITAI:",
+          group.dataset.group,
           button.textContent.trim()
         );
 
@@ -47,7 +50,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (saveButton) {
 
-    saveButton.addEventListener("click", () => {
+    saveButton.addEventListener("click", (event) => {
+
+      event.preventDefault();
 
       const preferences = {};
 
@@ -55,16 +60,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const groupName = group.dataset.group;
 
-        const selected = [...group.querySelectorAll(".choice.active")]
-          .map((button) => button.textContent.trim());
+        const selected = [];
+
+        group.querySelectorAll(".choice.active").forEach((button) => {
+          selected.push(button.textContent.trim());
+        });
 
         preferences[groupName] = selected;
 
       });
 
-      console.log("FITAI Preferences:", preferences);
-
-      // Save in browser
       localStorage.setItem(
         "fitaiPreferences",
         JSON.stringify(preferences)
@@ -75,6 +80,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (status) {
         status.textContent = "Your style has been saved ✓";
       }
+
+      console.log("FITAI Preferences:", preferences);
 
     });
 
@@ -89,25 +96,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (loginButton) {
 
-    loginButton.addEventListener("click", () => {
+    loginButton.addEventListener("click", (event) => {
 
-      // Try common login elements
-      const loginDialog =
-        document.getElementById("loginDialog") ||
-        document.querySelector("dialog") ||
-        document.querySelector(".modal");
+      event.preventDefault();
 
-      if (loginDialog) {
+      const dialog = document.getElementById("loginDialog");
 
-        if (typeof loginDialog.showModal === "function") {
-          loginDialog.showModal();
+      if (dialog) {
+
+        if (typeof dialog.showModal === "function") {
+          dialog.showModal();
         } else {
-          loginDialog.style.display = "flex";
+          dialog.style.display = "flex";
         }
 
       } else {
 
-        console.log("Login dialog not found.");
+        const modal = document.querySelector(".modal");
+
+        if (modal) {
+          modal.style.display = "flex";
+        } else {
+          alert("Login window not found.");
+        }
 
       }
 
@@ -117,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // =========================================
-  // LOGIN - CONTINUE BUTTON
+  // LOGIN CONTINUE
   // =========================================
 
   document.addEventListener("click", (event) => {
@@ -126,53 +137,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!button) return;
 
-    const text = button.textContent.trim().toLowerCase();
+    const text = button.textContent
+      .trim()
+      .toLowerCase();
 
-    if (
-      text === "continue" ||
-      text === "continue →" ||
-      text === "continue >"
-    ) {
-
-      event.preventDefault();
-
-      const email =
-        document.querySelector(
-          'input[type="email"]'
-        );
-
-      const password =
-        document.querySelector(
-          'input[type="password"]'
-        );
-
-      if (email && email.value.trim() === "") {
-
-        alert("Please enter your email.");
-
-        email.focus();
-
-        return;
-
-      }
-
-      if (password && password.value.trim() === "") {
-
-        alert("Please enter your password.");
-
-        password.focus();
-
-        return;
-
-      }
-
-      console.log("Login Continue clicked.");
-
-      alert("Login button is working!");
-
+    if (text !== "continue" && !text.startsWith("continue")) {
+      return;
     }
 
-  });
+    event.preventDefault();
 
+    const email = document.querySelector(
+      'input[type="email"]'
+    );
+
+    const password = document.querySelector(
+      'input[type="password"]'
+    );
+
+    if (email && !email.value.trim()) {
+      alert("Please enter your email.");
+      email.focus();
+      return;
+    }
+
+    if (password && !password.value.trim()) {
+      alert("Please enter your password.");
+      password.focus();
+      return;
+    }
+
+    alert("Login Continue is working!");
+
+  });
 
 });
