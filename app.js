@@ -10,12 +10,6 @@
     user: "fitai_demo_user_v2"
   };
 
-  const demoFits = [
-    { name: "Midnight Street", emoji: "🖤", price: 2499, items: "Oversized black tee · Baggy cargos · White sneakers" },
-    { name: "Clean Signal", emoji: "🤍", price: 2199, items: "Cream shirt · Straight trousers · Minimal sneakers" },
-    { name: "City Y2K", emoji: "🕶️", price: 2899, items: "Graphic tee · Wide jeans · Retro sneakers" }
-  ];
-
   const state = {
     photoUrl: "",
     preferences: {
@@ -25,7 +19,29 @@
       budget: 3000,
       occasions: [],
       fit: ""
-    }
+    },
+    lastFits: []
+  };
+
+  // Local recommendation catalog. This is the MVP AI-style engine: it scores
+  // complete outfit recipes against the user's preferences instead of returning
+  // the same three outfits every time.
+  const outfitCatalog = [
+    { name: "Midnight Street", emoji: "🖤", price: 2499, styles: ["Streetwear","Grunge","Y2K"], colors: ["Black","Grey","White"], occasions: ["College","Casual","Party"], fits: ["Baggy","Oversized","Relaxed"], items: "Oversized black tee · Baggy cargos · White sneakers" },
+    { name: "Clean Signal", emoji: "🤍", price: 2199, styles: ["Minimal","Smart Casual","Old Money"], colors: ["White","Beige","Grey"], occasions: ["College","Casual","Date","Dinner"], fits: ["Regular","Relaxed","Slim"], items: "Cream shirt · Straight trousers · Minimal sneakers" },
+    { name: "City Y2K", emoji: "🕶️", price: 2899, styles: ["Y2K","Streetwear"], colors: ["Blue","Black","White"], occasions: ["Party","Casual","College"], fits: ["Baggy","Oversized"], items: "Graphic tee · Wide jeans · Retro sneakers" },
+    { name: "Seoul Layer", emoji: "🇰🇷", price: 2799, styles: ["Korean","Minimal","Smart Casual"], colors: ["Black","White","Grey","Beige"], occasions: ["College","Casual","Date","Dinner"], fits: ["Oversized","Regular","Relaxed"], items: "Boxy overshirt · Wide trousers · Clean sneakers" },
+    { name: "Quiet Luxury", emoji: "🕊️", price: 3199, styles: ["Old Money","Minimal","Smart Casual"], colors: ["Beige","White","Brown","Grey"], occasions: ["Date","Dinner","Wedding","Vacation"], fits: ["Regular","Slim","Relaxed"], items: "Textured polo · Pleated trousers · Loafers" },
+    { name: "Retro Weekend", emoji: "📼", price: 2399, styles: ["Vintage","Y2K","Streetwear"], colors: ["Blue","Brown","White","Red"], occasions: ["Casual","College","Party","Vacation"], fits: ["Baggy","Relaxed","Oversized"], items: "Vintage graphic tee · Washed denim · Retro trainers" },
+    { name: "Dark Academia", emoji: "📚", price: 2999, styles: ["Vintage","Old Money","Korean"], colors: ["Brown","Black","Beige","Grey"], occasions: ["College","Date","Dinner","Casual"], fits: ["Regular","Relaxed"], items: "Knit sweater · Brown trousers · Leather loafers" },
+    { name: "Active Mode", emoji: "⚡", price: 1999, styles: ["Athleisure","Streetwear","Korean"], colors: ["Black","Grey","White","Blue"], occasions: ["College","Casual","Vacation"], fits: ["Oversized","Relaxed","Regular"], items: "Relaxed hoodie · Track pants · Chunky sneakers" },
+    { name: "Weekend Prep", emoji: "🎓", price: 2599, styles: ["Preppy","Old Money","Smart Casual"], colors: ["White","Blue","Beige","Brown"], occasions: ["College","Date","Vacation","Dinner"], fits: ["Regular","Relaxed"], items: "Oxford shirt · Chinos · Clean sneakers" },
+    { name: "Grunge Core", emoji: "🎸", price: 2299, styles: ["Grunge","Vintage","Streetwear"], colors: ["Black","Red","Grey","White"], occasions: ["Party","Casual","College"], fits: ["Oversized","Baggy","Relaxed"], items: "Washed band tee · Distressed denim · High-top sneakers" }
+  ];
+
+  const colorFallback = {
+    Black: "black", White: "white", Grey: "grey", Blue: "blue",
+    Brown: "brown", Green: "green", Red: "red", Beige: "beige"
   };
 
   function safeJSONParse(value, fallback) {
@@ -43,6 +59,20 @@
     });
   }
 
+  function normalize(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function money(value) {
+    return `₹${Number(value).toLocaleString("en-IN")}`;
+  }
+
+  function escapeHTML(value) {
+    return String(value).replace(/[&<>'"]/g, char => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
+    }[char]));
+  }
+
   // Smooth navigation.
   $$('[data-scroll]').forEach(button => {
     button.addEventListener("click", event => {
@@ -57,6 +87,11 @@
     button.addEventListener("click", () => {
       $$("#styleChips .chip").forEach(item => item.classList.remove("active"));
       button.classList.add("active");
+      const style = button.textContent.trim();
+      const styleSelect = $("#style");
+      if (styleSelect && Array.from(styleSelect.options).some(option => option.value === style)) {
+        styleSelect.value = style;
+      }
     });
   });
 
@@ -132,9 +167,7 @@
     setStatus("✓ Your style has been saved.", "#preferenceStatus");
   }
 
-  $("#savePreferences")?.addEventListener("click", () => {
-    savePreferences();
-  });
+  $("#savePreferences")?.addEventListener("click", savePreferences);
 
   $("#clearPreferences")?.addEventListener("click", () => {
     state.preferences = { gender: "", styles: [], colors: [], budget: 3000, occasions: [], fit: "" };
@@ -143,7 +176,7 @@
     setStatus("Preferences reset.", "#preferenceStatus");
   });
 
-  // Photo preview with size/type validation and object URL cleanup.
+  // Photo preview.
   const photoInput = $("#photoInput");
   const preview = $("#preview");
   const removePhoto = $("#removePhoto");
@@ -170,7 +203,8 @@
       preview.src = state.photoUrl;
       preview.style.display = "block";
     }
-    $("#photoInfo").textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+    const info = $("#photoInfo");
+    if (info) info.textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
     removePhoto?.classList.remove("hidden");
     updateStep(1);
   });
@@ -183,55 +217,120 @@
       preview.removeAttribute("src");
       preview.style.display = "none";
     }
-    $("#photoInfo").textContent = "";
+    const info = $("#photoInfo");
+    if (info) info.textContent = "";
     removePhoto.classList.add("hidden");
   });
 
-  // Generate demo recommendations.
-  $("#generateBtn")?.addEventListener("click", () => {
+  function getQuickInputs() {
+    return {
+      style: $("#style")?.value || "Streetwear",
+      budget: Number($("#budget")?.value || 3000),
+      occasion: $("#occasion")?.value || "Casual"
+    };
+  }
+
+  function scoreOutfit(outfit, p, quick) {
+    let score = 42;
+    const reasons = [];
+    const preferredStyles = p.styles.length ? p.styles : [quick.style];
+    const preferredColors = p.colors;
+    const preferredOccasions = p.occasions.length ? p.occasions : [quick.occasion];
+    const preferredFit = p.fit;
+    const budget = p.budget || quick.budget;
+
+    const styleHits = outfit.styles.filter(style => preferredStyles.some(value => normalize(value) === normalize(style))).length;
+    const colorHits = outfit.colors.filter(color => preferredColors.some(value => normalize(value) === normalize(color))).length;
+    const occasionHits = outfit.occasions.filter(value => preferredOccasions.some(pref => normalize(pref) === normalize(value))).length;
+    const fitHit = preferredFit && outfit.fits.some(value => normalize(value) === normalize(preferredFit));
+
+    score += Math.min(styleHits * 18, 36);
+    score += Math.min(colorHits * 8, 24);
+    score += occasionHits ? 12 : 0;
+    score += fitHit ? 12 : 0;
+
+    if (outfit.price <= budget) {
+      score += 12;
+      reasons.push("within your budget");
+    } else {
+      score -= Math.min(30, Math.ceil((outfit.price - budget) / 100));
+    }
+
+    if (styleHits) reasons.push(`${outfit.styles.find(style => preferredStyles.some(pref => normalize(pref) === normalize(style))) || styleHits + " style matches"}`);
+    if (colorHits) reasons.push(`${colorHits} color match${colorHits > 1 ? "es" : ""}`);
+    if (occasionHits) reasons.push("fits your occasion");
+    if (fitHit) reasons.push(`${preferredFit.toLowerCase()} fit`);
+
+    return { score: Math.max(1, Math.min(99, Math.round(score))), reasons };
+  }
+
+  function buildRecommendations() {
     syncPreferencesFromUI();
     const p = state.preferences;
-    const quickStyle = $("#style")?.value || "Streetwear";
-    const quickBudget = Number($("#budget")?.value || p.budget || 3000);
-    const occasion = $("#occasion")?.value || "Casual";
-    const style = p.styles[0] || quickStyle;
-    const budget = p.budget || quickBudget;
+    const quick = getQuickInputs();
 
-    updateStep(3);
-    setStatus("✦ Analyzing preferences · matching colors · building outfits…");
+    return outfitCatalog
+      .map((outfit, index) => {
+        const result = scoreOutfit(outfit, p, quick);
+        const maxBudget = p.budget || quick.budget;
+        return {
+          ...outfit,
+          index,
+          tag: p.styles[0] || quick.style,
+          occasion: p.occasions[0] || quick.occasion,
+          match: result.score,
+          reasons: result.reasons.length ? result.reasons.slice(0, 3) : ["balanced with your preferences"],
+          overBudget: outfit.price > maxBudget
+        };
+      })
+      .sort((a, b) => b.match - a.match || a.price - b.price)
+      .slice(0, 3);
+  }
+
+  function renderRecommendations(fits) {
     const results = $("#results");
     if (!results) return;
-    results.innerHTML = "";
-
-    setTimeout(() => {
-      const fits = demoFits.map((fit, index) => ({
-        ...fit,
-        tag: style,
-        occasion,
-        price: Math.min(fit.price, budget, quickBudget),
-        index
-      }));
-
-      results.innerHTML = fits.map(fit => `
-        <article class="outfit">
-          <div class="outfit-visual" aria-hidden="true">${fit.emoji}</div>
-          <div class="outfit-body">
-            <small class="muted">AI MATCH · ${fit.tag} · ${fit.occasion}</small>
-            <h3>${fit.name}</h3>
-            <p class="muted">${fit.items}</p>
-            <div class="price">₹${fit.price.toLocaleString("en-IN")}</div>
-            <div class="actions">
-              <button type="button" data-save="${fit.index}">♡ Save</button>
-              <button type="button" data-remix="${fit.index}">↻ Remix</button>
-              <button type="button" data-shop="${fit.index}">Shop →</button>
-            </div>
+    results.innerHTML = fits.map((fit, position) => `
+      <article class="outfit">
+        <div class="outfit-visual" aria-hidden="true">${fit.emoji}</div>
+        <div class="outfit-body">
+          <small class="muted">AI MATCH · ${fit.match}% · ${escapeHTML(fit.tag)}</small>
+          <h3>${escapeHTML(fit.name)}</h3>
+          <p class="muted">${escapeHTML(fit.items)}</p>
+          <p class="muted tiny">Why: ${escapeHTML(fit.reasons.join(" · "))}</p>
+          <div class="price">${money(fit.price)}${fit.overBudget ? " · above budget" : ""}</div>
+          <div class="actions">
+            <button type="button" data-save="${position}">♡ Save</button>
+            <button type="button" data-remix="${position}">↻ Remix</button>
+            <button type="button" data-shop="${position}">Shop →</button>
           </div>
-        </article>
-      `).join("");
+        </div>
+      </article>
+    `).join("");
+    bindResultActions(fits);
+  }
 
-      setStatus("✦ 3 personalized looks ready.");
+  // Generate personalized recommendations.
+  $("#generateBtn")?.addEventListener("click", () => {
+    const results = $("#results");
+    syncPreferencesFromUI();
+
+    if (!state.preferences.styles.length && !$("#style")?.value) {
+      setStatus("Choose at least a style before generating.");
+      return;
+    }
+
+    updateStep(3);
+    setStatus("✦ Analyzing your preferences · scoring styles · matching colors · checking budget…");
+    if (results) results.innerHTML = '<div class="panel"><b>FITAI is styling you…</b><p class="muted">Finding the best matches from your preferences.</p></div>';
+
+    window.setTimeout(() => {
+      const fits = buildRecommendations();
+      state.lastFits = fits;
+      renderRecommendations(fits);
+      setStatus(`✦ ${fits.length} personalized looks ready. Your best match is ${fits[0].match}%.`);
       updateStep(4);
-      bindResultActions(fits);
+      results?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 650);
   });
 
@@ -251,18 +350,20 @@
     $$("[data-remix]", $("#results")).forEach(button => {
       button.addEventListener("click", () => {
         button.disabled = true;
-        const old = button.textContent;
         button.textContent = "Remixing…";
-        setTimeout(() => {
-          button.disabled = false;
-          button.textContent = old;
-        }, 650);
+        window.setTimeout(() => {
+          const current = state.lastFits.length ? state.lastFits : buildRecommendations();
+          const rotated = current.slice(1).concat(current.slice(0, 1));
+          state.lastFits = rotated;
+          renderRecommendations(rotated);
+          setStatus(`↻ Remix complete. ${rotated[0].name} is now your top match.`);
+        }, 450);
       });
     });
 
     $$("[data-shop]", $("#results")).forEach(button => {
       button.addEventListener("click", () => {
-        alert("Shopping links are not connected yet. Add approved affiliate/product APIs before using live links.");
+        alert("Live shopping is the next integration. Product/affiliate APIs can be connected here without changing the recommendation engine.");
       });
     });
   }
@@ -280,9 +381,10 @@
     list.innerHTML = saved.slice().reverse().map(item => `
       <article class="panel saved-card">
         <div>
-          <b>${item.name}</b>
-          <p class="muted">${item.items}</p>
-          <span class="price">₹${Number(item.price).toLocaleString("en-IN")}</span>
+          <b>${escapeHTML(item.name)}</b>
+          <p class="muted">${escapeHTML(item.items)}</p>
+          <span class="price">${money(item.price)}</span>
+          ${item.match ? `<p class="muted tiny">${item.match}% AI match · ${escapeHTML(item.tag || "Personalized")}</p>` : ""}
         </div>
         <button class="outline" type="button" data-remove-saved="${encodeURIComponent(item.name)}">Remove</button>
       </article>
@@ -304,7 +406,7 @@
     renderSaved();
   });
 
-  // Demo login: browser-only and deliberately not a real authentication system.
+  // Demo login: browser-only, not real authentication.
   const loginDialog = $("#loginDialog");
   $("#loginBtn")?.addEventListener("click", () => {
     if (loginDialog && !loginDialog.open) loginDialog.showModal();
@@ -324,7 +426,7 @@
     setStatus(`Welcome back, ${user.name}.`, "#preferenceStatus");
   });
 
-  // Restore UI state.
+  // Restore state.
   const savedPreferences = safeJSONParse(localStorage.getItem(STORAGE.preferences), null);
   if (savedPreferences) {
     state.preferences = { ...state.preferences, ...savedPreferences };
